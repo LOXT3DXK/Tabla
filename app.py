@@ -31,7 +31,7 @@ st.markdown("""
         height: 45px !important;
     }
 
-    /* REJILLA UNIFICADA: Eliminamos espacios entre celdas */
+    /* REJILLA UNIFICADA */
     .table-cell {
         border: 1px solid #ffffff;
         padding: 0px;
@@ -44,7 +44,6 @@ st.markdown("""
         font-weight: 600;
         color: #ffffff;
         width: 100%;
-        margin: 0px !important; /* Asegura que no haya separación */
     }
 
     .header-cell {
@@ -80,7 +79,7 @@ st.markdown("""
         color: #0d1b2a !important;
     }
 
-    /* CUADROS DE MÉTRICAS (AHORA 5) */
+    /* MÉTRICAS */
     .metric-box {
         text-align: center;
         padding: 10px;
@@ -108,16 +107,21 @@ if 'edit_index' not in st.session_state:
 
 # 3. PANEL DE INGRESO
 with st.container():
-    def_temp, def_pj, def_g, def_a = ("", 0, 0, 0)
+    # Valores por defecto
+    def_temp, def_pj, def_g, def_a = "", 0, 0, 0
+    
+    # Si estamos editando, cargar los datos de la fila seleccionada
     if st.session_state.edit_index is not None:
-        e = st.session_state.filas[st.session_state.edit_index]
+        idx = st.session_state.edit_index
+        e = st.session_state.filas[idx]
         def_temp, def_pj, def_g, def_a = e['TEMP'], e['PJ'], e['GOLES'], e['ASIST']
 
     c1, c2, c3, c4 = st.columns([3, 1, 1, 1])
-    with c1: t_in = st.text_input("Temporada / Mes", value=def_temp, key="input_temp")
-    with c2: p_in = st.number_input("Partidos", min_value=0, value=def_pj, key="input_pj")
-    with c3: g_in = st.number_input("Goles", min_value=0, value=def_g, key="input_g")
-    with c4: a_in = st.number_input("Asistencias", min_value=0, value=def_a, key="input_a")
+    # Importante: el valor 'value' se actualiza con def_X
+    t_in = c1.text_input("Temporada / Mes", value=def_temp)
+    p_in = c2.number_input("Partidos", min_value=0, value=def_pj)
+    g_in = c3.number_input("Goles", min_value=0, value=def_g)
+    a_in = c4.number_input("Asistencias", min_value=0, value=def_a)
 
     b1, b2 = st.columns(2)
     with b1:
@@ -127,7 +131,6 @@ with st.container():
                 pj_calc = p_in if p_in > 0 else 1
                 ga = g_in + a_in
                 gar = round(ga/pj_calc, 2) if p_in > 0 else 0.0
-                # Cálculo de nota base según tu fórmula de G/A rate
                 avg = 10.0 if gar >= 6 else (0.0 if gar <= 0 else round((gar * 10) / 6, 1))
                 
                 nueva_data = {
@@ -135,9 +138,10 @@ with st.container():
                     "ASIST": a_in, "A_RATE": round(a_in/pj_calc, 2) if p_in > 0 else 0.0, 
                     "GA": ga, "GA_RATE": gar, "AVG": avg
                 }
+                
                 if st.session_state.edit_index is not None:
                     st.session_state.filas[st.session_state.edit_index] = nueva_data
-                    st.session_state.edit_index = None
+                    st.session_state.edit_index = None # Resetear modo edición
                 else:
                     st.session_state.filas.append(nueva_data)
                 st.rerun()
@@ -159,7 +163,7 @@ if st.session_state.filas:
 
 st.write("")
 
-# 5. TABLA INTEGRADA
+# 5. TABLA (FILAS JUNTAS Y MODO EDIT FUNCIONANDO)
 if st.session_state.filas:
     # Encabezado
     h = st.columns([1.5, 0.6, 0.6, 0.8, 1, 0.8, 0.6, 0.8, 0.6, 0.6, 0.6])
@@ -168,9 +172,9 @@ if st.session_state.filas:
         if label != "":
             col.markdown(f'<div class="header-cell">{label}</div>', unsafe_allow_html=True)
 
-    # Datos (Filas pegadas)
+    # Datos
     for i, f in enumerate(st.session_state.filas):
-        # Ajustamos el espaciado entre filas con un pequeño contenedor para evitar el gap de Streamlit
+        # El margen negativo -8px elimina la separación entre filas que pone Streamlit
         st.markdown('<div style="margin-top:-8px;">', unsafe_allow_html=True) 
         r = st.columns([1.5, 0.6, 0.6, 0.8, 1, 0.8, 0.6, 0.8, 0.6, 0.6, 0.6])
         r[0].markdown(f'<div class="table-cell">{f["TEMP"]}</div>', unsafe_allow_html=True)
@@ -182,13 +186,17 @@ if st.session_state.filas:
         r[6].markdown(f'<div class="table-cell">{f["GA"]}</div>', unsafe_allow_html=True)
         r[7].markdown(f'<div class="table-cell">{f["GA_RATE"]:.2f}</div>', unsafe_allow_html=True)
         r[8].markdown(f'<div class="table-cell">{f["AVG"]:.1f}</div>', unsafe_allow_html=True)
+        
         with r[9]:
-            if st.button("EDIT", key=f"btn_e_{i}"):
+            # Al presionar EDIT, guardamos el índice y recargamos
+            if st.button("EDIT", key=f"edit_{i}"):
                 st.session_state.edit_index = i
                 st.rerun()
         with r[10]:
-            if st.button("DEL", key=f"btn_d_{i}"):
+            if st.button("DEL", key=f"del_{i}"):
                 st.session_state.filas.pop(i)
+                if st.session_state.edit_index == i:
+                    st.session_state.edit_index = None
                 st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 else:
