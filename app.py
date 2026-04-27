@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 
-# 1. CONFIGURACIÓN Y ESTILO (EQUILIBRIO Y SIMETRÍA)
+# 1. CONFIGURACIÓN Y ESTILO COMPACTO
 st.set_page_config(page_title="Stats Lab Pro", layout="wide")
 
 st.markdown("""
@@ -12,25 +12,25 @@ st.markdown("""
         color: #ffffff;
     }
     
-    /* SEPARACIÓN DE BLOQUES VERTICALES */
+    /* REDUCIR ESPACIADO GENERAL */
     [data-testid="stVerticalBlock"] {
-        gap: 1rem !important; /* Espacio base entre secciones grandes */
+        gap: 0.5rem !important;
     }
     
-    /* SEPARACIÓN UNIFORME ENTRE FILAS DE LA TABLA */
+    /* FILAS COMPACTAS Y SIMÉTRICAS */
     .row-wrapper {
-        margin-bottom: 12px !important; /* Espacio idéntico entre cada fila añadida */
+        margin-bottom: 6px !important; /* Separación sutil entre filas */
     }
 
     .table-cell {
         border: 1px solid #ffffff;
         background-color: #0b1221;
-        height: 45px;
+        height: 35px; /* Altura reducida */
         display: flex;
         align-items: center;
         justify-content: center;
         font-weight: 600;
-        font-size: 0.9rem;
+        font-size: 0.85rem;
     }
 
     .header-cell {
@@ -38,47 +38,49 @@ st.markdown("""
         background-color: #1a2639;
         font-weight: 900;
         text-transform: uppercase;
-        font-size: 0.75rem;
-        height: 50px;
+        font-size: 0.7rem;
+        height: 40px; /* Encabezado más bajo */
         display: flex;
         align-items: center;
         justify-content: center;
-        margin-bottom: 8px;
+        margin-bottom: 4px;
     }
 
-    /* CUADROS DE MÉTRICAS (MÁS ESPACIADOS) */
+    /* MÉTRICAS COMPACTAS */
     .metric-container {
         border: 1px solid #ffffff;
         text-align: center;
-        padding: 15px;
+        padding: 8px;
         background: rgba(0,0,0,0.4);
-        margin: 5px;
     }
 
-    /* BOTONES CON TEXTO CÓMODO */
+    /* BOTONES DELGADOS */
     .stButton > button {
         background-color: rgba(255, 255, 255, 0.1) !important;
         border: 1px solid #ffffff !important;
         color: white !important;
         border-radius: 0px !important;
-        height: auto !important;
-        min-height: 48px !important;
+        height: 35px !important; /* Misma altura que las celdas */
         width: 100% !important;
-        padding: 10px 20px !important; /* Espacio para que el texto respire */
-        font-size: 0.85rem !important;
+        padding: 0px !important;
+        font-size: 0.75rem !important;
         font-weight: 800 !important;
         text-transform: uppercase;
-        letter-spacing: 1px;
     }
 
     .stButton > button:hover {
         background-color: #ffffff !important;
         color: #0d1b2a !important;
     }
+    
+    /* Ajustar inputs para que no se vean gigantes */
+    .stNumberInput input, .stTextInput input {
+        height: 35px !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 
-st.markdown('<h1 style="text-transform: uppercase; margin-bottom:30px;">STATS LAB PERFORMANCE TRACKER</h1>', unsafe_allow_html=True)
+st.markdown('<h2 style="text-transform: uppercase; margin-bottom:10px;">STATS LAB PERFORMANCE TRACKER</h2>', unsafe_allow_html=True)
 
 # 2. LÓGICA DE DATOS
 if 'filas' not in st.session_state:
@@ -86,25 +88,23 @@ if 'filas' not in st.session_state:
 if 'edit_index' not in st.session_state:
     st.session_state.edit_index = None
 
-# 3. PANEL DE INGRESO (INPUTS)
+# 3. PANEL DE INGRESO (STRICTLY COMPACT)
 with st.container():
     def_temp, def_pj, def_g, def_a = ("", 0, 0, 0)
     if st.session_state.edit_index is not None:
         e = st.session_state.filas[st.session_state.edit_index]
         def_temp, def_pj, def_g, def_a = e['TEMP'], e['PJ'], e['GOLES'], e['ASIST']
 
-    c1, c2, c3, c4 = st.columns([3, 1, 1, 1])
-    t_in = c1.text_input("Temporada / Mes", value=def_temp)
-    p_in = c2.number_input("Partidos", min_value=0, value=def_pj)
+    c1, c2, c3, c4 = st.columns([2.5, 1, 1, 1])
+    t_in = c1.text_input("Temp/Mes", value=def_temp)
+    p_in = c2.number_input("PJ", min_value=0, value=def_pj)
     g_in = c3.number_input("Goles", min_value=0, value=def_g)
-    a_in = c4.number_input("Asistencias", min_value=0, value=def_a)
-
-    st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
+    a_in = c4.number_input("Asist", min_value=0, value=def_a)
 
     b1, b2 = st.columns(2)
     with b1:
-        msg = "GUARDAR CAMBIOS" if st.session_state.edit_index is not None else "AGREGAR REGISTRO"
-        if st.button(msg):
+        txt = "GUARDAR" if st.session_state.edit_index is not None else "AGREGAR"
+        if st.button(txt):
             if t_in:
                 pj_calc = p_in if p_in > 0 else 1
                 ga = g_in + a_in
@@ -122,45 +122,32 @@ with st.container():
                     st.session_state.filas.append(nueva_data)
                 st.rerun()
     with b2:
-        if st.button("LIMPIAR TODO"):
+        if st.button("LIMPIAR"):
             st.session_state.filas = []
             st.session_state.edit_index = None
             st.rerun()
 
-st.markdown("<br><hr><br>", unsafe_allow_html=True)
-
-# 4. CUADROS DE MÉTRICAS (ESPACIADOS)
+# 4. MÉTRICAS PEQUEÑAS
 if st.session_state.filas:
     df = pd.DataFrame(st.session_state.filas)
     m1, m2, m3, m4, m5 = st.columns(5)
-    metrics = [
-        ("TOTAL PJ", int(df["PJ"].sum())),
-        ("TOTAL GOLES", int(df["GOLES"].sum())),
-        ("TOTAL ASIST", int(df["ASIST"].sum())),
-        ("TOTAL G/A", int(df["GA"].sum())),
-        ("AVG GLOBAL", round(df["AVG"].mean(), 1))
-    ]
-    for col, (label, val) in zip([m1, m2, m3, m4, m5], metrics):
-        col.markdown(f'''
-            <div class="metric-container">
-                <div style="font-size:0.75rem; font-weight:800; color:#aaa;">{label}</div>
-                <div style="font-size:1.6rem; font-weight:900;">{val}</div>
-            </div>
-        ''', unsafe_allow_html=True)
+    metrics = [("PJ", int(df["PJ"].sum())), ("GOLES", int(df["GOLES"].sum())), 
+               ("ASIST", int(df["ASIST"].sum())), ("G/A", int(df["GA"].sum())), 
+               ("AVG", round(df["AVG"].mean(), 1))]
+    for col, (l, v) in zip([m1, m2, m3, m4, m5], metrics):
+        col.markdown(f'<div class="metric-container"><span style="font-size:0.7rem; color:#aaa;">{l}</span><br><b>{v}</b></div>', unsafe_allow_html=True)
 
-st.markdown("<div style='margin-bottom: 30px;'></div>", unsafe_allow_html=True)
+st.write("")
 
-# 5. TABLA CON FILAS SEPARADAS SIMÉTRICAMENTE
+# 5. TABLA COMPACTA
 if st.session_state.filas:
-    anchos = [1.5, 0.6, 0.6, 0.8, 1, 0.8, 0.6, 0.8, 0.6, 0.6, 0.6]
+    anchos = [1.3, 0.5, 0.5, 0.7, 0.8, 0.7, 0.5, 0.7, 0.5, 0.6, 0.6]
     
-    # Encabezado
     h = st.columns(anchos)
-    headers = ["TEMPORADA", "PJ", "GOLES", "G RATE", "ASISTENCIAS", "A RATE", "G/A", "G/A RATE", "AVG", "", ""]
+    headers = ["TEMP", "PJ", "G", "G/R", "AST", "A/R", "G/A", "G/A/R", "AVG", "", ""]
     for col, txt in zip(h, headers):
         if txt: col.markdown(f'<div class="header-cell">{txt}</div>', unsafe_allow_html=True)
 
-    # Filas de datos
     for i, f in enumerate(st.session_state.filas):
         st.markdown('<div class="row-wrapper">', unsafe_allow_html=True)
         r = st.columns(anchos)
@@ -174,11 +161,11 @@ if st.session_state.filas:
         r[7].markdown(f'<div class="table-cell">{f["GA_RATE"]:.2f}</div>', unsafe_allow_html=True)
         r[8].markdown(f'<div class="table-cell">{f["AVG"]:.1f}</div>', unsafe_allow_html=True)
         with r[9]:
-            if st.button("EDIT", key=f"edit_b_{i}"):
+            if st.button("EDIT", key=f"ed_{i}"):
                 st.session_state.edit_index = i
                 st.rerun()
         with r[10]:
-            if st.button("DEL", key=f"del_b_{i}"):
+            if st.button("DEL", key=f"de_{i}"):
                 st.session_state.filas.pop(i)
                 st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
