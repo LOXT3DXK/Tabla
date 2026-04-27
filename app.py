@@ -1,13 +1,14 @@
 import streamlit as st
 import pandas as pd
 
-# 1. CONFIGURACIÓN Y ESTILO PROFESIONAL
+# 1. CONFIGURACIÓN Y ESTILO CON DEGRADADO INTENSO
 st.set_page_config(page_title="Stats Lab Pro", layout="wide")
 
 st.markdown("""
     <style>
+    /* Degradado más notorio: de negro azulado a azul vibrante */
     .stApp {
-        background: linear-gradient(180deg, #0d1b2a 0%, #1e3a8a 100%);
+        background: linear-gradient(180deg, #050a14 0%, #0d1b2a 40%, #1e3a8a 80%, #3b82f6 100%);
         background-attachment: fixed;
         color: #ffffff;
     }
@@ -17,11 +18,12 @@ st.markdown("""
         font-size: 2.5rem; 
         text-transform: uppercase; 
         margin-bottom: 20px;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
     }
 
-    /* INPUTS LIMPIOS */
+    /* INPUTS */
     .stTextInput input, .stNumberInput input {
-        background-color: rgba(0, 0, 0, 0.4) !important;
+        background-color: rgba(0, 0, 0, 0.5) !important;
         border: none !important;
         border-bottom: 2px solid #ffffff !important;
         color: white !important;
@@ -30,12 +32,12 @@ st.markdown("""
         height: 45px !important;
     }
 
-    /* CELDAS UNIFICADAS (MISMO COLOR PARA TODO) */
+    /* CELDAS UNIFICADAS */
     .table-cell {
         border: 1px solid #ffffff;
         padding: 0px;
         text-align: center;
-        background-color: #0b1221; /* Color único para toda la tabla */
+        background-color: #0b1221;
         min-height: 45px;
         display: flex;
         align-items: center;
@@ -45,7 +47,23 @@ st.markdown("""
         width: 100%;
     }
 
-    /* BOTONES AGREGAR / LIMPIAR CON ESPACIO */
+    /* ENCABEZADO SIN BORDES AL FINAL */
+    .header-cell {
+        border: 1px solid #ffffff;
+        background-color: #1a2639;
+        font-weight: 900;
+        text-transform: uppercase;
+        font-size: 0.7rem;
+        padding: 10px 2px;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 50px;
+        width: 100%;
+    }
+
+    /* BOTONES */
     .stButton>button {
         background-color: rgba(255, 255, 255, 0.1) !important;
         border: 1px solid #ffffff !important;
@@ -61,14 +79,14 @@ st.markdown("""
     .stButton>button:hover {
         background-color: #ffffff !important;
         color: #0d1b2a !important;
+        box-shadow: 0px 0px 15px rgba(255,255,255,0.3);
     }
 
-    /* CONTENEDOR DE MÉTRICAS */
     .metric-box {
         text-align: center;
         padding: 15px;
-        border: 1px solid #ffffff;
-        background-color: rgba(0,0,0,0.3);
+        border: 2px solid #ffffff;
+        background-color: rgba(0,0,0,0.5);
     }
     </style>
     """, unsafe_allow_html=True)
@@ -83,7 +101,6 @@ if 'edit_index' not in st.session_state:
 
 # 3. PANEL DE INGRESO
 with st.container():
-    # Cargar valores si estamos editando
     def_temp = ""
     def_pj, def_g, def_a = 0, 0, 0
     
@@ -100,12 +117,11 @@ with st.container():
     with c3: g_in = st.number_input("Goles", min_value=0, value=def_g, key="input_g")
     with c4: a_in = st.number_input("Asistencias", min_value=0, value=def_a, key="input_a")
 
-    # Botones principales
     b1, b2 = st.columns(2)
     with b1:
         texto_btn = "GUARDAR CAMBIOS" if st.session_state.edit_index is not None else "AGREGAR REGISTRO"
         if st.button(texto_btn):
-            if t_in: # Evitar filas vacías
+            if t_in:
                 pj_calc = p_in if p_in > 0 else 1
                 ga = g_in + a_in
                 gar = round(ga/pj_calc, 2) if p_in > 0 else 0.0
@@ -129,7 +145,7 @@ with st.container():
             st.session_state.edit_index = None
             st.rerun()
 
-# 4. RESUMEN DE MÉTRICAS (MÁS LIMPIO)
+# 4. MÉTRICAS
 if st.session_state.filas:
     df = pd.DataFrame(st.session_state.filas)
     m1, m2, m3 = st.columns(3)
@@ -137,17 +153,20 @@ if st.session_state.filas:
     with m2: st.markdown(f'<div class="metric-box">TOTAL GOLES<br><b>{int(df["GOLES"].sum())}</b></div>', unsafe_allow_html=True)
     with m3: st.markdown(f'<div class="metric-box">AVG GLOBAL<br><b>{df["AVG"].mean():.1f}</b></div>', unsafe_allow_html=True)
 
-st.write("") # Espaciador
+st.write("")
 
-# 5. TABLA DEFINITIVA (SIMÉTRICA)
+# 5. TABLA (ENCABEZADO LIMPIO)
 if st.session_state.filas:
-    # Encabezado (Sin botones de Edit/Del)
+    # Encabezado: Solo definimos bordes para las columnas con texto
     h = st.columns([1.5, 0.6, 0.6, 0.8, 1, 0.8, 0.6, 0.8, 0.6, 0.6, 0.6])
     labels = ["TEMPORADA", "PJ", "GOLES", "G RATE", "ASISTENCIAS", "A RATE", "G/A", "G/A RATE", "AVG", "", ""]
-    for col, label in zip(h, labels):
-        col.markdown(f'<div class="table-cell" style="background:#223344; font-size:0.7rem;">{label}</div>', unsafe_allow_html=True)
+    
+    for idx, (col, label) in enumerate(zip(h, labels)):
+        if label != "": # Solo dibuja el cuadro si tiene texto
+            col.markdown(f'<div class="header-cell">{label}</div>', unsafe_allow_html=True)
+        # Las columnas de EDIT y DEL (vacías) no reciben el div con borde
 
-    # Datos
+    # Filas de Datos (Estas sí mantienen sus botones)
     for i, f in enumerate(st.session_state.filas):
         r = st.columns([1.5, 0.6, 0.6, 0.8, 1, 0.8, 0.6, 0.8, 0.6, 0.6, 0.6])
         r[0].markdown(f'<div class="table-cell">{f["TEMP"]}</div>', unsafe_allow_html=True)
@@ -160,7 +179,6 @@ if st.session_state.filas:
         r[7].markdown(f'<div class="table-cell">{f["GA_RATE"]:.2f}</div>', unsafe_allow_html=True)
         r[8].markdown(f'<div class="table-cell">{f["AVG"]:.1f}</div>', unsafe_allow_html=True)
         
-        # Botones de acción alineados perfectamente
         with r[9]:
             if st.button("EDIT", key=f"btn_e_{i}"):
                 st.session_state.edit_index = i
@@ -170,4 +188,4 @@ if st.session_state.filas:
                 st.session_state.filas.pop(i)
                 st.rerun()
 else:
-    st.info("SISTEMA ONLINE. INGRESE REGISTROS PARA EMPEZAR.")
+    st.info("SISTEMA ONLINE. INGRESE REGISTROS.")
