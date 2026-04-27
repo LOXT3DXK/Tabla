@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 
-# 1. CONFIGURACIÓN Y ESTILO DEFINITIVO (ESPACIADO UNIFORME)
+# 1. CONFIGURACIÓN Y ESTILO (FORZADO DE SIMETRÍA)
 st.set_page_config(page_title="Stats Lab Pro", layout="wide")
 
 st.markdown("""
@@ -12,37 +12,29 @@ st.markdown("""
         color: #ffffff;
     }
     
-    .main-title { 
-        font-family: 'Arial Black', sans-serif; 
-        font-size: 2.5rem; 
-        text-transform: uppercase; 
-        margin-bottom: 20px;
+    /* Obligar a todas las columnas a no tener espacio interno */
+    [data-testid="column"] {
+        padding: 0px !important;
+        margin: 0px !important;
     }
 
-    /* INPUTS */
-    .stTextInput input, .stNumberInput input {
-        background-color: rgba(0, 0, 0, 0.5) !important;
-        border: none !important;
-        border-bottom: 2px solid #ffffff !important;
-        color: white !important;
-        border-radius: 0px !important;
-        font-weight: 700 !important;
-        height: 45px !important;
+    /* Contenedor general para cada fila de datos */
+    .row-container {
+        margin-bottom: 10px; /* AQUÍ CONTROLAS LA SEPARACIÓN EXACTA ENTRE FILAS */
+        display: flex;
+        align-items: center;
     }
 
-    /* CELDAS CON SEPARACIÓN CONTROLADA */
     .table-cell {
         border: 1px solid #ffffff;
-        padding: 0px;
-        text-align: center;
         background-color: #0b1221;
         height: 45px;
         display: flex;
         align-items: center;
         justify-content: center;
         font-weight: 600;
-        color: #ffffff;
-        margin-bottom: 8px !important; /* Separación fija para todas las filas */
+        width: 100%;
+        box-sizing: border-box;
     }
 
     .header-cell {
@@ -55,46 +47,30 @@ st.markdown("""
         display: flex;
         align-items: center;
         justify-content: center;
-        margin-bottom: 12px; /* Un poco más de espacio bajo el encabezado */
+        margin-bottom: 15px;
     }
 
-    /* BOTONES AJUSTADOS AL MARGEN DE LA FILA */
-    .stButton>button {
+    /* FORZAR BOTONES A MEDIDAS EXACTAS */
+    .stButton > button {
         background-color: rgba(255, 255, 255, 0.1) !important;
         border: 1px solid #ffffff !important;
         color: white !important;
         border-radius: 0px !important;
-        height: 45px !important;
+        height: 45px !important; /* Misma altura que la celda */
         width: 100% !important;
-        font-weight: 800 !important;
-        margin-bottom: 8px !important; /* Misma separación que las celdas */
+        margin: 0px !important;
+        padding: 0px !important;
+        line-height: 45px !important;
     }
 
-    .stButton>button:hover {
+    .stButton > button:hover {
         background-color: #ffffff !important;
         color: #0d1b2a !important;
-    }
-
-    .metric-box {
-        text-align: center;
-        padding: 10px;
-        border: 1px solid #ffffff;
-        background-color: rgba(0,0,0,0.5);
-    }
-    .metric-value {
-        font-size: 1.4rem;
-        font-weight: 900;
-        display: block;
-    }
-    
-    /* RESET DE COLUMNAS */
-    [data-testid="column"] {
-        padding: 0px !important;
     }
     </style>
     """, unsafe_allow_html=True)
 
-st.markdown('<h1 class="main-title">STATS LAB PERFORMANCE TRACKER</h1>', unsafe_allow_html=True)
+st.markdown('<h1 style="text-transform: uppercase;">STATS LAB PERFORMANCE TRACKER</h1>', unsafe_allow_html=True)
 
 # 2. LÓGICA DE DATOS
 if 'filas' not in st.session_state:
@@ -117,8 +93,7 @@ with st.container():
 
     b1, b2 = st.columns(2)
     with b1:
-        texto_btn = "GUARDAR CAMBIOS" if st.session_state.edit_index is not None else "AGREGAR REGISTRO"
-        if st.button(texto_btn):
+        if st.button("GUARDAR" if st.session_state.edit_index is not None else "AGREGAR"):
             if t_in:
                 pj_calc = p_in if p_in > 0 else 1
                 ga = g_in + a_in
@@ -141,31 +116,31 @@ with st.container():
             st.session_state.edit_index = None
             st.rerun()
 
-# 4. RESUMEN DE 5 MÉTRICAS
+# 4. RESUMEN
 if st.session_state.filas:
     df = pd.DataFrame(st.session_state.filas)
-    m1, m2, m3, m4, m5 = st.columns(5)
-    with m1: st.markdown(f'<div class="metric-box">TOTAL PJ<span class="metric-value">{int(df["PJ"].sum())}</span></div>', unsafe_allow_html=True)
-    with m2: st.markdown(f'<div class="metric-box">TOTAL GOLES<span class="metric-value">{int(df["GOLES"].sum())}</span></div>', unsafe_allow_html=True)
-    with m3: st.markdown(f'<div class="metric-box">TOTAL ASIST<span class="metric-value">{int(df["ASIST"].sum())}</span></div>', unsafe_allow_html=True)
-    with m4: st.markdown(f'<div class="metric-box">TOTAL G/A<span class="metric-value">{int(df["GA"].sum())}</span></div>', unsafe_allow_html=True)
-    with m5: st.markdown(f'<div class="metric-box">AVG GLOBAL<span class="metric-value">{df["AVG"].mean():.1f}</span></div>', unsafe_allow_html=True)
+    met = st.columns(5)
+    labels = ["TOTAL PJ", "TOTAL GOLES", "TOTAL ASIST", "TOTAL G/A", "AVG GLOBAL"]
+    vals = [int(df["PJ"].sum()), int(df["GOLES"].sum()), int(df["ASIST"].sum()), int(df["GA"].sum()), round(df["AVG"].mean(), 1)]
+    for m, l, v in zip(met, labels, vals):
+        m.markdown(f'<div class="metric-box">{l}<br><span style="font-size:1.5rem; font-weight:900;">{v}</span></div>', unsafe_allow_html=True)
 
 st.write("")
 
-# 5. TABLA CON SEPARACIÓN IGUALITARIA
+# 5. TABLA CON FILAS ENVUELTAS (PARA SIMETRÍA TOTAL)
 if st.session_state.filas:
     anchos = [1.5, 0.6, 0.6, 0.8, 1, 0.8, 0.6, 0.8, 0.6, 0.6, 0.6]
     
     # Encabezado
     h = st.columns(anchos)
-    labels = ["TEMPORADA", "PJ", "GOLES", "G RATE", "ASISTENCIAS", "A RATE", "G/A", "G/A RATE", "AVG", "", ""]
-    for col, label in zip(h, labels):
-        if label:
-            col.markdown(f'<div class="header-cell">{label}</div>', unsafe_allow_html=True)
+    headers = ["TEMPORADA", "PJ", "GOLES", "G RATE", "ASISTENCIAS", "A RATE", "G/A", "G/A RATE", "AVG", "", ""]
+    for col, txt in zip(h, headers):
+        if txt: col.markdown(f'<div class="header-cell">{txt}</div>', unsafe_allow_html=True)
 
-    # Filas de Datos
+    # Filas de datos
     for i, f in enumerate(st.session_state.filas):
+        # Usamos un div contenedor para forzar el espaciado vertical idéntico
+        st.markdown('<div class="row-container">', unsafe_allow_html=True)
         r = st.columns(anchos)
         r[0].markdown(f'<div class="table-cell">{f["TEMP"]}</div>', unsafe_allow_html=True)
         r[1].markdown(f'<div class="table-cell">{f["PJ"]}</div>', unsafe_allow_html=True)
@@ -176,14 +151,12 @@ if st.session_state.filas:
         r[6].markdown(f'<div class="table-cell">{f["GA"]}</div>', unsafe_allow_html=True)
         r[7].markdown(f'<div class="table-cell">{f["GA_RATE"]:.2f}</div>', unsafe_allow_html=True)
         r[8].markdown(f'<div class="table-cell">{f["AVG"]:.1f}</div>', unsafe_allow_html=True)
-        
         with r[9]:
-            if st.button("EDIT", key=f"e_{i}"):
+            if st.button("EDIT", key=f"ed_{i}"):
                 st.session_state.edit_index = i
                 st.rerun()
         with r[10]:
-            if st.button("DEL", key=f"d_{i}"):
+            if st.button("DEL", key=f"de_{i}"):
                 st.session_state.filas.pop(i)
                 st.rerun()
-else:
-    st.info("SISTEMA ONLINE. INGRESE REGISTROS.")
+        st.markdown('</div>', unsafe_allow_html=True)
