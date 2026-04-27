@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 
-# 1. CONFIGURACIÓN Y ESTILO DEFINITIVO (ELIMINA EL "AIRE" DE STREAMLIT)
+# 1. CONFIGURACIÓN Y ESTILO DE PRECISIÓN
 st.set_page_config(page_title="Stats Lab Pro", layout="wide")
 
 st.markdown("""
@@ -12,23 +12,25 @@ st.markdown("""
         color: #ffffff;
     }
     
-    /* ELIMINA EL MARGEN DE LOS CONTENEDORES DE STREAMLIT */
-    /* Esto hace que cada 'st.columns' se pegue a la anterior */
-    [data-testid="stVerticalBlock"] > div {
-        padding-top: 0px !important;
-        padding-bottom: 0px !important;
-        margin-top: 2px !important; /* AQUÍ CONTROLAS LA SEPARACIÓN EXACTA ENTRE FILAS */
+    /* 1. ELIMINAR ASIMETRÍA: Forzar espacio mínimo entre CUALQUIER elemento vertical */
+    [data-testid="stVerticalBlock"] {
+        gap: 0rem !important;
+    }
+    
+    /* 2. ESPACIO ENTRE FILAS DE LA TABLA: Controlamos el margen de las columnas de datos */
+    [data-testid="column"] {
+        margin-bottom: 4px !important; /* Aquí ajustas qué tan pegadas quieres las filas (4px es poco) */
     }
 
     .table-cell {
         border: 1px solid #ffffff;
         background-color: #0b1221;
-        height: 38px;
+        height: 40px;
         display: flex;
         align-items: center;
         justify-content: center;
         font-weight: 600;
-        font-size: 0.85rem;
+        font-size: 0.9rem;
     }
 
     .header-cell {
@@ -37,28 +39,42 @@ st.markdown("""
         font-weight: 900;
         text-transform: uppercase;
         font-size: 0.7rem;
-        height: 42px;
+        height: 45px;
         display: flex;
         align-items: center;
         justify-content: center;
-        margin-bottom: 5px;
+        margin-bottom: 2px;
     }
 
-    /* BOTONES */
+    /* 3. ARREGLAR TEXTO APRETADO EN BOTONES */
     .stButton > button {
         background-color: rgba(255, 255, 255, 0.1) !important;
         border: 1px solid #ffffff !important;
         color: white !important;
         border-radius: 0px !important;
-        height: 38px !important;
+        height: auto !important; /* Dejar que el alto respire si es necesario */
+        min-height: 45px !important;
         width: 100% !important;
-        padding: 0px !important;
-        font-size: 0.7rem !important;
+        padding: 5px 15px !important; /* Más espacio lateral para el texto */
+        font-size: 0.8rem !important;
+        font-weight: 800 !important;
+        line-height: 1.2 !important; /* Ajuste para que el texto no choque arriba/abajo */
+        text-transform: uppercase;
+    }
+
+    .stButton > button:hover {
+        background-color: #ffffff !important;
+        color: #0d1b2a !important;
+    }
+    
+    /* Títulos de inputs para que no se peguen */
+    label {
+        margin-bottom: 5px !important;
     }
     </style>
     """, unsafe_allow_html=True)
 
-st.markdown('<h1 style="text-transform: uppercase;">STATS LAB PERFORMANCE TRACKER</h1>', unsafe_allow_html=True)
+st.markdown('<h1 style="text-transform: uppercase; margin-bottom:20px;">STATS LAB PERFORMANCE TRACKER</h1>', unsafe_allow_html=True)
 
 # 2. LÓGICA DE DATOS
 if 'filas' not in st.session_state:
@@ -79,9 +95,12 @@ with st.container():
     g_in = c3.number_input("Goles", min_value=0, value=def_g)
     a_in = c4.number_input("Asistencias", min_value=0, value=def_a)
 
+    st.write("") # Un pequeño respiro antes de los botones de acción
+
     b1, b2 = st.columns(2)
     with b1:
-        if st.button("GUARDAR CAMBIOS" if st.session_state.edit_index is not None else "AGREGAR REGISTRO"):
+        txt = "GUARDAR CAMBIOS" if st.session_state.edit_index is not None else "AGREGAR REGISTRO"
+        if st.button(txt):
             if t_in:
                 pj_calc = p_in if p_in > 0 else 1
                 ga = g_in + a_in
@@ -104,9 +123,9 @@ with st.container():
             st.session_state.edit_index = None
             st.rerun()
 
-st.write("---") # Separador visual
+st.markdown("<br>", unsafe_allow_html=True)
 
-# 4. TABLA SIMÉTRICA
+# 4. TABLA CON FILAS SIMÉTRICAS
 if st.session_state.filas:
     anchos = [1.5, 0.6, 0.6, 0.8, 1, 0.8, 0.6, 0.8, 0.6, 0.6, 0.6]
     
@@ -116,7 +135,7 @@ if st.session_state.filas:
     for col, txt in zip(h, headers):
         if txt: col.markdown(f'<div class="header-cell">{txt}</div>', unsafe_allow_html=True)
 
-    # Filas de datos (sin st.container para evitar el desfase)
+    # Filas de datos
     for i, f in enumerate(st.session_state.filas):
         r = st.columns(anchos)
         r[0].markdown(f'<div class="table-cell">{f["TEMP"]}</div>', unsafe_allow_html=True)
