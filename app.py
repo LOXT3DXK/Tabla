@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 
-# 1. CONFIGURACIÓN Y ESTILO DE PRECISIÓN
+# 1. CONFIGURACIÓN Y ESTILO (EQUILIBRIO Y SIMETRÍA)
 st.set_page_config(page_title="Stats Lab Pro", layout="wide")
 
 st.markdown("""
@@ -12,20 +12,20 @@ st.markdown("""
         color: #ffffff;
     }
     
-    /* 1. ELIMINAR ASIMETRÍA: Forzar espacio mínimo entre CUALQUIER elemento vertical */
+    /* SEPARACIÓN DE BLOQUES VERTICALES */
     [data-testid="stVerticalBlock"] {
-        gap: 0rem !important;
+        gap: 1rem !important; /* Espacio base entre secciones grandes */
     }
     
-    /* 2. ESPACIO ENTRE FILAS DE LA TABLA: Controlamos el margen de las columnas de datos */
-    [data-testid="column"] {
-        margin-bottom: 4px !important; /* Aquí ajustas qué tan pegadas quieres las filas (4px es poco) */
+    /* SEPARACIÓN UNIFORME ENTRE FILAS DE LA TABLA */
+    .row-wrapper {
+        margin-bottom: 12px !important; /* Espacio idéntico entre cada fila añadida */
     }
 
     .table-cell {
         border: 1px solid #ffffff;
         background-color: #0b1221;
-        height: 40px;
+        height: 45px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -38,43 +38,47 @@ st.markdown("""
         background-color: #1a2639;
         font-weight: 900;
         text-transform: uppercase;
-        font-size: 0.7rem;
-        height: 45px;
+        font-size: 0.75rem;
+        height: 50px;
         display: flex;
         align-items: center;
         justify-content: center;
-        margin-bottom: 2px;
+        margin-bottom: 8px;
     }
 
-    /* 3. ARREGLAR TEXTO APRETADO EN BOTONES */
+    /* CUADROS DE MÉTRICAS (MÁS ESPACIADOS) */
+    .metric-container {
+        border: 1px solid #ffffff;
+        text-align: center;
+        padding: 15px;
+        background: rgba(0,0,0,0.4);
+        margin: 5px;
+    }
+
+    /* BOTONES CON TEXTO CÓMODO */
     .stButton > button {
         background-color: rgba(255, 255, 255, 0.1) !important;
         border: 1px solid #ffffff !important;
         color: white !important;
         border-radius: 0px !important;
-        height: auto !important; /* Dejar que el alto respire si es necesario */
-        min-height: 45px !important;
+        height: auto !important;
+        min-height: 48px !important;
         width: 100% !important;
-        padding: 5px 15px !important; /* Más espacio lateral para el texto */
-        font-size: 0.8rem !important;
+        padding: 10px 20px !important; /* Espacio para que el texto respire */
+        font-size: 0.85rem !important;
         font-weight: 800 !important;
-        line-height: 1.2 !important; /* Ajuste para que el texto no choque arriba/abajo */
         text-transform: uppercase;
+        letter-spacing: 1px;
     }
 
     .stButton > button:hover {
         background-color: #ffffff !important;
         color: #0d1b2a !important;
     }
-    
-    /* Títulos de inputs para que no se peguen */
-    label {
-        margin-bottom: 5px !important;
-    }
     </style>
     """, unsafe_allow_html=True)
 
-st.markdown('<h1 style="text-transform: uppercase; margin-bottom:20px;">STATS LAB PERFORMANCE TRACKER</h1>', unsafe_allow_html=True)
+st.markdown('<h1 style="text-transform: uppercase; margin-bottom:30px;">STATS LAB PERFORMANCE TRACKER</h1>', unsafe_allow_html=True)
 
 # 2. LÓGICA DE DATOS
 if 'filas' not in st.session_state:
@@ -82,7 +86,7 @@ if 'filas' not in st.session_state:
 if 'edit_index' not in st.session_state:
     st.session_state.edit_index = None
 
-# 3. PANEL DE INGRESO
+# 3. PANEL DE INGRESO (INPUTS)
 with st.container():
     def_temp, def_pj, def_g, def_a = ("", 0, 0, 0)
     if st.session_state.edit_index is not None:
@@ -95,12 +99,12 @@ with st.container():
     g_in = c3.number_input("Goles", min_value=0, value=def_g)
     a_in = c4.number_input("Asistencias", min_value=0, value=def_a)
 
-    st.write("") # Un pequeño respiro antes de los botones de acción
+    st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
 
     b1, b2 = st.columns(2)
     with b1:
-        txt = "GUARDAR CAMBIOS" if st.session_state.edit_index is not None else "AGREGAR REGISTRO"
-        if st.button(txt):
+        msg = "GUARDAR CAMBIOS" if st.session_state.edit_index is not None else "AGREGAR REGISTRO"
+        if st.button(msg):
             if t_in:
                 pj_calc = p_in if p_in > 0 else 1
                 ga = g_in + a_in
@@ -123,9 +127,30 @@ with st.container():
             st.session_state.edit_index = None
             st.rerun()
 
-st.markdown("<br>", unsafe_allow_html=True)
+st.markdown("<br><hr><br>", unsafe_allow_html=True)
 
-# 4. TABLA CON FILAS SIMÉTRICAS
+# 4. CUADROS DE MÉTRICAS (ESPACIADOS)
+if st.session_state.filas:
+    df = pd.DataFrame(st.session_state.filas)
+    m1, m2, m3, m4, m5 = st.columns(5)
+    metrics = [
+        ("TOTAL PJ", int(df["PJ"].sum())),
+        ("TOTAL GOLES", int(df["GOLES"].sum())),
+        ("TOTAL ASIST", int(df["ASIST"].sum())),
+        ("TOTAL G/A", int(df["GA"].sum())),
+        ("AVG GLOBAL", round(df["AVG"].mean(), 1))
+    ]
+    for col, (label, val) in zip([m1, m2, m3, m4, m5], metrics):
+        col.markdown(f'''
+            <div class="metric-container">
+                <div style="font-size:0.75rem; font-weight:800; color:#aaa;">{label}</div>
+                <div style="font-size:1.6rem; font-weight:900;">{val}</div>
+            </div>
+        ''', unsafe_allow_html=True)
+
+st.markdown("<div style='margin-bottom: 30px;'></div>", unsafe_allow_html=True)
+
+# 5. TABLA CON FILAS SEPARADAS SIMÉTRICAMENTE
 if st.session_state.filas:
     anchos = [1.5, 0.6, 0.6, 0.8, 1, 0.8, 0.6, 0.8, 0.6, 0.6, 0.6]
     
@@ -137,6 +162,7 @@ if st.session_state.filas:
 
     # Filas de datos
     for i, f in enumerate(st.session_state.filas):
+        st.markdown('<div class="row-wrapper">', unsafe_allow_html=True)
         r = st.columns(anchos)
         r[0].markdown(f'<div class="table-cell">{f["TEMP"]}</div>', unsafe_allow_html=True)
         r[1].markdown(f'<div class="table-cell">{f["PJ"]}</div>', unsafe_allow_html=True)
@@ -148,10 +174,11 @@ if st.session_state.filas:
         r[7].markdown(f'<div class="table-cell">{f["GA_RATE"]:.2f}</div>', unsafe_allow_html=True)
         r[8].markdown(f'<div class="table-cell">{f["AVG"]:.1f}</div>', unsafe_allow_html=True)
         with r[9]:
-            if st.button("EDIT", key=f"e_{i}"):
+            if st.button("EDIT", key=f"edit_b_{i}"):
                 st.session_state.edit_index = i
                 st.rerun()
         with r[10]:
-            if st.button("DEL", key=f"d_{i}"):
+            if st.button("DEL", key=f"del_b_{i}"):
                 st.session_state.filas.pop(i)
                 st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
