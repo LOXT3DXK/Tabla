@@ -20,18 +20,20 @@ st.markdown("""
         text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
     }
 
-    /* --- CORRECCIÓN DE ESPACIADO --- */
-    /* Forzamos a que Streamlit no añada margen entre elementos de la tabla */
+    /* --- AJUSTE DE DISTANCIA PEQUEÑA --- */
+    /* Controlamos el espacio entre los bloques de fila */
     [data-testid="stVerticalBlock"] > div:has(div.table-cell) {
         gap: 0px !important;
-        margin-bottom: -15px !important; /* Ajuste para pegar las filas del bucle */
+        margin-bottom: 4px !important; /* Espacio mínimo entre filas */
     }
 
-    /* Forzamos que los contenedores de los botones no ocupen espacio extra */
+    /* Alineación de los botones para que no ensanchen la fila */
     div[data-testid="stButton"] {
-        margin-top: -3px !important;
+        margin-top: 0px !important;
+        display: flex;
+        align-items: center;
     }
-    /* ------------------------------ */
+    /* ---------------------------------- */
 
     /* INPUTS */
     .stTextInput input, .stNumberInput input {
@@ -73,6 +75,7 @@ st.markdown("""
         justify-content: center;
         min-height: 50px;
         width: 100%;
+        margin-bottom: 4px !important; /* Misma distancia que las filas */
     }
 
     /* BOTONES */
@@ -180,9 +183,9 @@ if st.session_state.filas:
         if label != "":
             col.markdown(f'<div class="header-cell">{label}</div>', unsafe_allow_html=True)
 
-    # Datos (Filas unificadas)
+    # Datos (Filas con distancia simétrica controlada)
     for i, f in enumerate(st.session_state.filas):
-        # El contenedor principal del bucle
+        # Eliminamos el div manual de margen negativo y dejamos que el CSS lo maneje
         with st.container():
             r = st.columns([1.5, 0.6, 0.6, 0.8, 1, 0.8, 0.6, 0.8, 0.6, 0.6, 0.6])
             r[0].markdown(f'<div class="table-cell">{f["TEMP"]}</div>', unsafe_allow_html=True)
