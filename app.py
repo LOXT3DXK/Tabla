@@ -6,11 +6,6 @@ st.set_page_config(page_title="Stats Lab Pro", layout="wide")
 
 st.markdown("""
     <style>
-    /* Reset de márgenes de Streamlit para simetría total */
-    [data-testid="stVerticalBlock"] {
-        gap: 0rem !important;
-    }
-    
     .stApp {
         background: linear-gradient(180deg, #050a14 0%, #0d1b2a 40%, #1e3a8a 80%, #3b82f6 100%);
         background-attachment: fixed;
@@ -25,13 +20,6 @@ st.markdown("""
         text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
     }
 
-    /* ELIMINAR ESPACIOS ENTRE COLUMNAS */
-    [data-testid="column"] {
-        padding: 0px !important;
-        margin: 0px !important;
-        width: -webkit-fill-available !available !important;
-    }
-
     /* INPUTS */
     .stTextInput input, .stNumberInput input {
         background-color: rgba(0, 0, 0, 0.5) !important;
@@ -43,45 +31,53 @@ st.markdown("""
         height: 45px !important;
     }
 
-    /* REJILLA SIMÉTRICA */
-    .table-cell, .header-cell {
+    /* REJILLA UNIFICADA */
+    .table-cell {
         border: 1px solid #ffffff;
+        padding: 0px;
         text-align: center;
+        background-color: #0b1221;
+        min-height: 45px;
         display: flex;
         align-items: center;
         justify-content: center;
+        font-weight: 600;
+        color: #ffffff;
         width: 100%;
         margin: 0px !important;
-        box-sizing: border-box;
-    }
-
-    .table-cell {
-        background-color: #0b1221;
-        height: 45px; /* Altura fija igual a los botones */
-        font-weight: 600;
-        font-size: 0.9rem;
     }
 
     .header-cell {
+        border: 1px solid #ffffff;
         background-color: #1a2639;
         font-weight: 900;
         text-transform: uppercase;
         font-size: 0.7rem;
-        height: 50px; /* Altura fija para el encabezado */
+        padding: 10px 2px;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 50px;
+        width: 100%;
     }
 
-    /* BOTONES AJUSTADOS A LA CELDA */
+    /* BOTONES - Ajuste de margen para evitar desalineación */
     .stButton>button {
         background-color: rgba(255, 255, 255, 0.1) !important;
         border: 1px solid #ffffff !important;
         color: white !important;
         border-radius: 0px !important;
-        height: 45px !important; /* Misma altura que table-cell */
+        height: 45px !important;
         width: 100% !important;
         font-weight: 800 !important;
         text-transform: uppercase;
         margin: 0px !important;
-        padding: 0px !important;
+    }
+    
+    /* CORRECCIÓN CRÍTICA: Elimina el espacio extra que Streamlit reserva para los botones */
+    div[data-testid="stButton"] {
+        margin-top: -1px !important;
     }
 
     .stButton>button:hover {
@@ -89,7 +85,7 @@ st.markdown("""
         color: #0d1b2a !important;
     }
 
-    /* MÉTRICAS */
+    /* CUADROS DE MÉTRICAS */
     .metric-box {
         text-align: center;
         padding: 10px;
@@ -97,12 +93,12 @@ st.markdown("""
         background-color: rgba(0,0,0,0.5);
         font-size: 0.8rem;
         text-transform: uppercase;
-        margin-bottom: 10px;
     }
     .metric-value {
         font-size: 1.4rem;
         font-weight: 900;
         display: block;
+        color: #ffffff;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -136,7 +132,8 @@ with st.container():
                 pj_calc = p_in if p_in > 0 else 1
                 ga = g_in + a_in
                 gar = round(ga/pj_calc, 2) if p_in > 0 else 0.0
-                avg = round(min(max(gar * 10 / 6, 0.0), 10.0), 1)
+                avg = 10.0 if gar >= 6 else (0.0 if gar <= 0 else round((gar * 10) / 6, 1))
+                
                 nueva_data = {
                     "TEMP": t_in, "PJ": p_in, "GOLES": g_in, "G_RATE": round(g_in/pj_calc, 2) if p_in > 0 else 0.0,
                     "ASIST": a_in, "A_RATE": round(a_in/pj_calc, 2) if p_in > 0 else 0.0, 
@@ -154,9 +151,7 @@ with st.container():
             st.session_state.edit_index = None
             st.rerun()
 
-st.write("")
-
-# 4. RESUMEN DE MÉTRICAS
+# 4. RESUMEN DE 5 MÉTRICAS
 if st.session_state.filas:
     df = pd.DataFrame(st.session_state.filas)
     m1, m2, m3, m4, m5 = st.columns(5)
@@ -166,23 +161,22 @@ if st.session_state.filas:
     with m4: st.markdown(f'<div class="metric-box">TOTAL G/A<span class="metric-value">{int(df["GA"].sum())}</span></div>', unsafe_allow_html=True)
     with m5: st.markdown(f'<div class="metric-box">AVG GLOBAL<span class="metric-value">{df["AVG"].mean():.1f}</span></div>', unsafe_allow_html=True)
 
-# 5. TABLA UNIFICADA DEFINITIVA
-if st.session_state.filas:
-    # Definición de anchos de columna (idénticos para todas las filas)
-    col_widths = [1.5, 0.6, 0.6, 0.8, 1, 0.8, 0.6, 0.8, 0.6, 0.6, 0.6]
-    
-    # Fila de Encabezado
-    h = st.columns(col_widths)
-    labels = ["TEMPORADA", "PJ", "GOLES", "G RATE", "ASISTENCIAS", "A RATE", "G/A", "G/A RATE", "AVG", "ACC", "ACC"]
-    for col, label in zip(h, labels):
-        col.markdown(f'<div class="header-cell">{label}</div>', unsafe_allow_html=True)
+st.write("")
 
-    # Filas de Datos
+# 5. TABLA INTEGRADA (CON AJUSTE DE SIMETRÍA)
+if st.session_state.filas:
+    # Encabezado
+    h = st.columns([1.5, 0.6, 0.6, 0.8, 1, 0.8, 0.6, 0.8, 0.6, 0.6, 0.6])
+    labels = ["TEMPORADA", "PJ", "GOLES", "G RATE", "ASISTENCIAS", "A RATE", "G/A", "G/A RATE", "AVG", "", ""]
+    for col, label in zip(h, labels):
+        if label != "":
+            col.markdown(f'<div class="header-cell">{label}</div>', unsafe_allow_html=True)
+
+    # Datos (Filas con corrección de margen negativo unificado)
     for i, f in enumerate(st.session_state.filas):
-        # Este pequeño hack de markdown elimina el micro-espacio entre filas de Streamlit
-        st.markdown('<div style="margin-top:-1px;"></div>', unsafe_allow_html=True)
-        r = st.columns(col_widths)
-        
+        # El margen -8px se aplica a TODAS las filas para que todas suban igual
+        st.markdown('<div style="margin-top:-8px;">', unsafe_allow_html=True) 
+        r = st.columns([1.5, 0.6, 0.6, 0.8, 1, 0.8, 0.6, 0.8, 0.6, 0.6, 0.6])
         r[0].markdown(f'<div class="table-cell">{f["TEMP"]}</div>', unsafe_allow_html=True)
         r[1].markdown(f'<div class="table-cell">{f["PJ"]}</div>', unsafe_allow_html=True)
         r[2].markdown(f'<div class="table-cell">{f["GOLES"]}</div>', unsafe_allow_html=True)
@@ -192,7 +186,6 @@ if st.session_state.filas:
         r[6].markdown(f'<div class="table-cell">{f["GA"]}</div>', unsafe_allow_html=True)
         r[7].markdown(f'<div class="table-cell">{f["GA_RATE"]:.2f}</div>', unsafe_allow_html=True)
         r[8].markdown(f'<div class="table-cell">{f["AVG"]:.1f}</div>', unsafe_allow_html=True)
-        
         with r[9]:
             if st.button("EDIT", key=f"btn_e_{i}"):
                 st.session_state.edit_index = i
@@ -201,5 +194,6 @@ if st.session_state.filas:
             if st.button("DEL", key=f"btn_d_{i}"):
                 st.session_state.filas.pop(i)
                 st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
 else:
     st.info("SISTEMA ONLINE. INGRESE REGISTROS.")
