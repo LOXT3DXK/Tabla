@@ -1,34 +1,37 @@
 import streamlit as st
 import pandas as pd
 
-# 1. CONFIGURACIÓN Y ESTILO (FORZADO DE SIMETRÍA)
+# 1. CONFIGURACIÓN Y ESTILO (RESET AGRESIVO DE ESPACIADO)
 st.set_page_config(page_title="Stats Lab Pro", layout="wide")
 
 st.markdown("""
     <style>
+    /* Fondo y Base */
     .stApp {
         background: linear-gradient(180deg, #050a14 0%, #0d1b2a 40%, #1e3a8a 80%, #3b82f6 100%);
         background-attachment: fixed;
         color: #ffffff;
     }
-    
-    /* Obligar a todas las columnas a no tener espacio interno */
+
+    /* ELIMINAR EL GAP DE STREAMLIT: Esto es lo que causaba la asimetría */
+    [data-testid="stVerticalBlock"] > div {
+        gap: 0px !important;
+    }
     [data-testid="column"] {
         padding: 0px !important;
-        margin: 0px !important;
     }
 
-    /* Contenedor general para cada fila de datos */
-    .row-container {
-        margin-bottom: 10px; /* AQUÍ CONTROLAS LA SEPARACIÓN EXACTA ENTRE FILAS */
+    /* FILA DE DATOS CON SEPARACIÓN MÍNIMA Y UNIFORME */
+    .row-wrapper {
+        margin-bottom: 4px !important; /* SEPARACIÓN EXACTA ENTRE FILAS */
         display: flex;
-        align-items: center;
+        width: 100%;
     }
 
     .table-cell {
         border: 1px solid #ffffff;
         background-color: #0b1221;
-        height: 45px;
+        height: 40px; /* Un poco más compacta */
         display: flex;
         align-items: center;
         justify-content: center;
@@ -43,34 +46,46 @@ st.markdown("""
         font-weight: 900;
         text-transform: uppercase;
         font-size: 0.7rem;
-        height: 50px;
+        height: 45px;
         display: flex;
         align-items: center;
         justify-content: center;
-        margin-bottom: 15px;
+        margin-bottom: 6px; /* Espacio bajo el encabezado */
     }
 
-    /* FORZAR BOTONES A MEDIDAS EXACTAS */
+    /* BOTONES FORZADOS A LA MISMA ALTURA Y MARGEN */
     .stButton > button {
         background-color: rgba(255, 255, 255, 0.1) !important;
         border: 1px solid #ffffff !important;
         color: white !important;
         border-radius: 0px !important;
-        height: 45px !important; /* Misma altura que la celda */
+        height: 40px !important;
         width: 100% !important;
         margin: 0px !important;
         padding: 0px !important;
-        line-height: 45px !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     .stButton > button:hover {
         background-color: #ffffff !important;
         color: #0d1b2a !important;
     }
+
+    /* Inputs */
+    .stTextInput input, .stNumberInput input {
+        background-color: rgba(0, 0, 0, 0.5) !important;
+        border: none !important;
+        border-bottom: 2px solid #ffffff !important;
+        color: white !important;
+        border-radius: 0px !important;
+        height: 40px !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 
-st.markdown('<h1 style="text-transform: uppercase;">STATS LAB PERFORMANCE TRACKER</h1>', unsafe_allow_html=True)
+st.markdown('<h1 style="text-transform: uppercase; margin-bottom:20px;">STATS LAB PERFORMANCE TRACKER</h1>', unsafe_allow_html=True)
 
 # 2. LÓGICA DE DATOS
 if 'filas' not in st.session_state:
@@ -97,11 +112,11 @@ with st.container():
             if t_in:
                 pj_calc = p_in if p_in > 0 else 1
                 ga = g_in + a_in
-                gar = round(ga/pj_calc, 2) if p_in > 0 else 0.0
+                gar = round(ga/pj_calc, 2)
                 avg = 10.0 if gar >= 6 else (0.0 if gar <= 0 else round((gar * 10) / 6, 1))
                 nueva_data = {
-                    "TEMP": t_in, "PJ": p_in, "GOLES": g_in, "G_RATE": round(g_in/pj_calc, 2) if p_in > 0 else 0.0,
-                    "ASIST": a_in, "A_RATE": round(a_in/pj_calc, 2) if p_in > 0 else 0.0, 
+                    "TEMP": t_in, "PJ": p_in, "GOLES": g_in, "G_RATE": round(g_in/pj_calc, 2),
+                    "ASIST": a_in, "A_RATE": round(a_in/pj_calc, 2), 
                     "GA": ga, "GA_RATE": gar, "AVG": avg
                 }
                 if st.session_state.edit_index is not None:
@@ -119,15 +134,16 @@ with st.container():
 # 4. RESUMEN
 if st.session_state.filas:
     df = pd.DataFrame(st.session_state.filas)
-    met = st.columns(5)
-    labels = ["TOTAL PJ", "TOTAL GOLES", "TOTAL ASIST", "TOTAL G/A", "AVG GLOBAL"]
-    vals = [int(df["PJ"].sum()), int(df["GOLES"].sum()), int(df["ASIST"].sum()), int(df["GA"].sum()), round(df["AVG"].mean(), 1)]
-    for m, l, v in zip(met, labels, vals):
-        m.markdown(f'<div class="metric-box">{l}<br><span style="font-size:1.5rem; font-weight:900;">{v}</span></div>', unsafe_allow_html=True)
+    m1, m2, m3, m4, m5 = st.columns(5)
+    metrics = [("TOTAL PJ", int(df["PJ"].sum())), ("TOTAL GOLES", int(df["GOLES"].sum())), 
+               ("TOTAL ASIST", int(df["ASIST"].sum())), ("TOTAL G/A", int(df["GA"].sum())), 
+               ("AVG GLOBAL", round(df["AVG"].mean(), 1))]
+    for col, (l, v) in zip([m1,m2,m3,m4,m5], metrics):
+        col.markdown(f'<div style="border:1px solid white; text-align:center; padding:5px; background:rgba(0,0,0,0.3);">{l}<br><b>{v}</b></div>', unsafe_allow_html=True)
 
 st.write("")
 
-# 5. TABLA CON FILAS ENVUELTAS (PARA SIMETRÍA TOTAL)
+# 5. TABLA CON SIMETRÍA MATEMÁTICA
 if st.session_state.filas:
     anchos = [1.5, 0.6, 0.6, 0.8, 1, 0.8, 0.6, 0.8, 0.6, 0.6, 0.6]
     
@@ -137,10 +153,10 @@ if st.session_state.filas:
     for col, txt in zip(h, headers):
         if txt: col.markdown(f'<div class="header-cell">{txt}</div>', unsafe_allow_html=True)
 
-    # Filas de datos
+    # Filas
     for i, f in enumerate(st.session_state.filas):
-        # Usamos un div contenedor para forzar el espaciado vertical idéntico
-        st.markdown('<div class="row-container">', unsafe_allow_html=True)
+        # Envolvemos cada fila para controlar el margen inferior exacto
+        st.markdown('<div class="row-wrapper">', unsafe_allow_html=True)
         r = st.columns(anchos)
         r[0].markdown(f'<div class="table-cell">{f["TEMP"]}</div>', unsafe_allow_html=True)
         r[1].markdown(f'<div class="table-cell">{f["PJ"]}</div>', unsafe_allow_html=True)
@@ -152,11 +168,11 @@ if st.session_state.filas:
         r[7].markdown(f'<div class="table-cell">{f["GA_RATE"]:.2f}</div>', unsafe_allow_html=True)
         r[8].markdown(f'<div class="table-cell">{f["AVG"]:.1f}</div>', unsafe_allow_html=True)
         with r[9]:
-            if st.button("EDIT", key=f"ed_{i}"):
+            if st.button("EDIT", key=f"e_{i}"):
                 st.session_state.edit_index = i
                 st.rerun()
         with r[10]:
-            if st.button("DEL", key=f"de_{i}"):
+            if st.button("DEL", key=f"d_{i}"):
                 st.session_state.filas.pop(i)
                 st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
