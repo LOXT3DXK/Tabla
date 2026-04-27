@@ -16,7 +16,7 @@ st.markdown("""
 
 st.markdown('<h1 class="main-title">STATS LAB<br>PERFORMANCE TRACKER</h1>', unsafe_allow_html=True)
 
-# 2. GESTIÓN DE ESTADO
+# 2. GESTIÓN DE ESTADO (CON REINICIO AUTOMÁTICO SI HAY ERROR)
 if 'filas' not in st.session_state:
     st.session_state.filas = []
 
@@ -31,16 +31,18 @@ with c3:
     goles_val = st.number_input("GOLES", min_value=0, value=0)
 with c4:
     asist_val = st.number_input("ASIST", min_value=0, value=0)
+
 with c5:
     if st.button("AÑADIR"):
         ga_total = goles_val + asist_val
         ga_rate = round(ga_total / pj_val, 2)
         
+        # Tu lógica de AVG
         if ga_rate >= 6: avg = 10.0
         elif ga_rate <= 0: avg = 0.0
         else: avg = round((ga_rate * 10) / 6, 1)
 
-        # Usamos nombres CLAVE idénticos
+        # Guardamos con nombres consistentes
         st.session_state.filas.append({
             "TEMPORADA": temp_val,
             "PJ": pj_val,
@@ -53,6 +55,7 @@ with c5:
             "AVG": avg
         })
         st.rerun()
+
 with c6:
     if st.button("BORRAR"):
         st.session_state.filas = []
@@ -60,22 +63,29 @@ with c6:
 
 st.divider()
 
-# 4. RENDERIZADO SEGURO
+# 4. PROCESAMIENTO SEGURO (USANDO .get() PARA EVITAR KEYERROR)
 if st.session_state.filas:
-    df = pd.DataFrame(st.session_state.filas)
-    
-    # MÉTRICAS: Usamos .get() o sumas directas del estado para que NUNCA falle
-    col_m1, col_m2, col_m3 = st.columns(3)
-    
-    # Sumar directamente de la lista de diccionarios es más seguro que el DataFrame en versiones inestables
-    total_pj = sum(f["PJ"] for f in st.session_state.filas)
-    total_g = sum(f["GOLES"] for f in st.session_state.filas)
-    prom_avg = round(sum(f["AVG"] for f in st.session_state.filas) / len(st.session_state.filas), 1)
+    try:
+        # Usamos .get(key, 0) para que si no existe la columna, use un 0 en vez de dar error
+        total_pj = sum(int(f.get("PJ", 0)) for f in st.session_state.filas)
+        total_g = sum(int(f.get("GOLES", 0)) for f in st.session_state.filas)
+        
+        # Evitar división por cero en el promedio general
+        lista_avg = [f.get("AVG", 0) for f in st.session_state.filas]
+        prom_avg = round(sum(lista_avg) / len(lista_avg), 1) if lista_avg else 0.0
 
-    col_m1.metric("TOTAL PJ", total_pj)
-    col_m2.metric("TOTAL GOLES", total_g)
-    col_m3.metric("AVG GLOBAL", prom_avg)
+        col_m1, col_m2, col_m3 = st.columns(3)
+        col_m1.metric("TOTAL PJ", total_pj)
+        col_m2.metric("TOTAL GOLES", total_g)
+        col_m3.metric("AVG GLOBAL", prom_avg)
 
-    st.dataframe(df, use_container_width=True, hide_index=True)
+        # Mostrar tabla
+        df = pd.DataFrame(st.session_state.filas)
+        st.dataframe(df, use_container_width=True, hide_index=True)
+        
+    except Exception as e:
+        st.error("Se detectó un conflicto de datos viejos. Limpiando sesión...")
+        st.session_state.filas = []
+        st.rerun()
 else:
     st.info("SISTEMA ONLINE: INGRESA DATOS.")
