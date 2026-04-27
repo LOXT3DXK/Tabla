@@ -20,6 +20,16 @@ st.markdown("""
         text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
     }
 
+    /* ELIMINAR GAPS DE STREAMLIT EN LA TABLA */
+    [data-testid="column"] {
+        padding: 0px !important;
+        margin: 0px !important;
+    }
+    
+    [data-testid="stVerticalBlock"] > div {
+        gap: 0rem !important;
+    }
+
     /* INPUTS */
     .stTextInput input, .stNumberInput input {
         background-color: rgba(0, 0, 0, 0.5) !important;
@@ -31,7 +41,7 @@ st.markdown("""
         height: 45px !important;
     }
 
-    /* REJILLA UNIFICADA: Eliminamos espacios entre celdas */
+    /* REJILLA UNIFICADA */
     .table-cell {
         border: 1px solid #ffffff;
         padding: 0px;
@@ -44,7 +54,7 @@ st.markdown("""
         font-weight: 600;
         color: #ffffff;
         width: 100%;
-        margin: 0px !important; /* Asegura que no haya separación */
+        margin: 0px !important;
     }
 
     .header-cell {
@@ -80,7 +90,7 @@ st.markdown("""
         color: #0d1b2a !important;
     }
 
-    /* CUADROS DE MÉTRICAS (AHORA 5) */
+    /* MÉTRICAS */
     .metric-box {
         text-align: center;
         padding: 10px;
@@ -119,6 +129,7 @@ with st.container():
     with c3: g_in = st.number_input("Goles", min_value=0, value=def_g, key="input_g")
     with c4: a_in = st.number_input("Asistencias", min_value=0, value=def_a, key="input_a")
 
+    st.write("") # Espacio pequeño
     b1, b2 = st.columns(2)
     with b1:
         texto_btn = "GUARDAR CAMBIOS" if st.session_state.edit_index is not None else "AGREGAR REGISTRO"
@@ -127,12 +138,14 @@ with st.container():
                 pj_calc = p_in if p_in > 0 else 1
                 ga = g_in + a_in
                 gar = round(ga/pj_calc, 2) if p_in > 0 else 0.0
-                # Cálculo de nota base según tu fórmula de G/A rate
-                avg = 10.0 if gar >= 6 else (0.0 if gar <= 0 else round((gar * 10) / 6, 1))
+                # Cálculo de nota base corregido
+                avg = round(min(max(gar * 10 / 6, 0.0), 10.0), 1)
                 
                 nueva_data = {
-                    "TEMP": t_in, "PJ": p_in, "GOLES": g_in, "G_RATE": round(g_in/pj_calc, 2) if p_in > 0 else 0.0,
-                    "ASIST": a_in, "A_RATE": round(a_in/pj_calc, 2) if p_in > 0 else 0.0, 
+                    "TEMP": t_in, "PJ": p_in, "GOLES": g_in, 
+                    "G_RATE": round(g_in/pj_calc, 2) if p_in > 0 else 0.0,
+                    "ASIST": a_in, 
+                    "A_RATE": round(a_in/pj_calc, 2) if p_in > 0 else 0.0, 
                     "GA": ga, "GA_RATE": gar, "AVG": avg
                 }
                 if st.session_state.edit_index is not None:
@@ -147,6 +160,8 @@ with st.container():
             st.session_state.edit_index = None
             st.rerun()
 
+st.write("---")
+
 # 4. RESUMEN DE 5 MÉTRICAS
 if st.session_state.filas:
     df = pd.DataFrame(st.session_state.filas)
@@ -159,37 +174,42 @@ if st.session_state.filas:
 
 st.write("")
 
-# 5. TABLA INTEGRADA
+# 5. TABLA INTEGRADA (CON CORRECCIÓN DE SIMETRÍA)
 if st.session_state.filas:
     # Encabezado
-    h = st.columns([1.5, 0.6, 0.6, 0.8, 1, 0.8, 0.6, 0.8, 0.6, 0.6, 0.6])
-    labels = ["TEMPORADA", "PJ", "GOLES", "G RATE", "ASISTENCIAS", "A RATE", "G/A", "G/A RATE", "AVG", "", ""]
-    for col, label in zip(h, labels):
-        if label != "":
-            col.markdown(f'<div class="header-cell">{label}</div>', unsafe_allow_html=True)
+    with st.container():
+        h = st.columns([1.5, 0.6, 0.6, 0.8, 1, 0.8, 0.6, 0.8, 0.6, 0.6, 0.6])
+        labels = ["TEMPORADA", "PJ", "GOLES", "G RATE", "ASISTENCIAS", "A RATE", "G/A", "G/A RATE", "AVG", "", ""]
+        for col, label in zip(h, labels):
+            if label != "":
+                col.markdown(f'<div class="header-cell">{label}</div>', unsafe_allow_html=True)
+            else:
+                col.markdown('<div style="height:50px;"></div>', unsafe_allow_html=True)
 
-    # Datos (Filas pegadas)
+    # Datos
     for i, f in enumerate(st.session_state.filas):
-        # Ajustamos el espaciado entre filas con un pequeño contenedor para evitar el gap de Streamlit
-        st.markdown('<div style="margin-top:-8px;">', unsafe_allow_html=True) 
-        r = st.columns([1.5, 0.6, 0.6, 0.8, 1, 0.8, 0.6, 0.8, 0.6, 0.6, 0.6])
-        r[0].markdown(f'<div class="table-cell">{f["TEMP"]}</div>', unsafe_allow_html=True)
-        r[1].markdown(f'<div class="table-cell">{f["PJ"]}</div>', unsafe_allow_html=True)
-        r[2].markdown(f'<div class="table-cell">{f["GOLES"]}</div>', unsafe_allow_html=True)
-        r[3].markdown(f'<div class="table-cell">{f["G_RATE"]:.2f}</div>', unsafe_allow_html=True)
-        r[4].markdown(f'<div class="table-cell">{f["ASIST"]}</div>', unsafe_allow_html=True)
-        r[5].markdown(f'<div class="table-cell">{f["A_RATE"]:.2f}</div>', unsafe_allow_html=True)
-        r[6].markdown(f'<div class="table-cell">{f["GA"]}</div>', unsafe_allow_html=True)
-        r[7].markdown(f'<div class="table-cell">{f["GA_RATE"]:.2f}</div>', unsafe_allow_html=True)
-        r[8].markdown(f'<div class="table-cell">{f["AVG"]:.1f}</div>', unsafe_allow_html=True)
-        with r[9]:
-            if st.button("EDIT", key=f"btn_e_{i}"):
-                st.session_state.edit_index = i
-                st.rerun()
-        with r[10]:
-            if st.button("DEL", key=f"btn_d_{i}"):
-                st.session_state.filas.pop(i)
-                st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
+        # El contenedor y el margen negativo eliminan el salto de Streamlit
+        with st.container():
+            st.markdown('<div style="margin-top: -1px;"></div>', unsafe_allow_html=True)
+            r = st.columns([1.5, 0.6, 0.6, 0.8, 1, 0.8, 0.6, 0.8, 0.6, 0.6, 0.6])
+            
+            r[0].markdown(f'<div class="table-cell">{f["TEMP"]}</div>', unsafe_allow_html=True)
+            r[1].markdown(f'<div class="table-cell">{f["PJ"]}</div>', unsafe_allow_html=True)
+            r[2].markdown(f'<div class="table-cell">{f["GOLES"]}</div>', unsafe_allow_html=True)
+            r[3].markdown(f'<div class="table-cell">{f["G_RATE"]:.2f}</div>', unsafe_allow_html=True)
+            r[4].markdown(f'<div class="table-cell">{f["ASIST"]}</div>', unsafe_allow_html=True)
+            r[5].markdown(f'<div class="table-cell">{f["A_RATE"]:.2f}</div>', unsafe_allow_html=True)
+            r[6].markdown(f'<div class="table-cell">{f["GA"]}</div>', unsafe_allow_html=True)
+            r[7].markdown(f'<div class="table-cell">{f["GA_RATE"]:.2f}</div>', unsafe_allow_html=True)
+            r[8].markdown(f'<div class="table-cell">{f["AVG"]:.1f}</div>', unsafe_allow_html=True)
+            
+            with r[9]:
+                if st.button("EDIT", key=f"btn_e_{i}"):
+                    st.session_state.edit_index = i
+                    st.rerun()
+            with r[10]:
+                if st.button("DEL", key=f"btn_d_{i}"):
+                    st.session_state.filas.pop(i)
+                    st.rerun()
 else:
     st.info("SISTEMA ONLINE. INGRESE REGISTROS.")
