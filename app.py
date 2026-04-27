@@ -20,18 +20,15 @@ st.markdown("""
         text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
     }
 
-    /* --- AJUSTE DE DISTANCIA PEQUEÑA --- */
-    /* Controlamos el espacio entre los bloques de fila */
-    [data-testid="stVerticalBlock"] > div:has(div.table-cell) {
+    /* --- ESTO ARREGLA LA SEPARACIÓN --- */
+    /* Eliminamos el espacio que Streamlit pone entre bloques por defecto */
+    [data-testid="stVerticalBlock"] > div {
         gap: 0px !important;
-        margin-bottom: 4px !important; /* Espacio mínimo entre filas */
     }
 
-    /* Alineación de los botones para que no ensanchen la fila */
-    div[data-testid="stButton"] {
-        margin-top: 0px !important;
-        display: flex;
-        align-items: center;
+    /* Ajuste fino para que las celdas no se toquen pero estén cerca */
+    .table-cell, .header-cell {
+        margin-bottom: 8px !important; 
     }
     /* ---------------------------------- */
 
@@ -46,7 +43,6 @@ st.markdown("""
         height: 45px !important;
     }
 
-    /* REJILLA UNIFICADA */
     .table-cell {
         border: 1px solid #ffffff;
         padding: 0px;
@@ -59,7 +55,6 @@ st.markdown("""
         font-weight: 600;
         color: #ffffff;
         width: 100%;
-        margin: 0px !important;
     }
 
     .header-cell {
@@ -75,7 +70,6 @@ st.markdown("""
         justify-content: center;
         min-height: 50px;
         width: 100%;
-        margin-bottom: 4px !important; /* Misma distancia que las filas */
     }
 
     /* BOTONES */
@@ -88,7 +82,6 @@ st.markdown("""
         width: 100% !important;
         font-weight: 800 !important;
         text-transform: uppercase;
-        margin: 0px !important;
     }
 
     .stButton>button:hover {
@@ -96,7 +89,6 @@ st.markdown("""
         color: #0d1b2a !important;
     }
 
-    /* CUADROS DE MÉTRICAS */
     .metric-box {
         text-align: center;
         padding: 10px;
@@ -104,6 +96,7 @@ st.markdown("""
         background-color: rgba(0,0,0,0.5);
         font-size: 0.8rem;
         text-transform: uppercase;
+        margin-bottom: 10px;
     }
     .metric-value {
         font-size: 1.4rem;
@@ -162,7 +155,7 @@ with st.container():
             st.session_state.edit_index = None
             st.rerun()
 
-# 4. RESUMEN DE 5 MÉTRICAS
+# 4. RESUMEN DE MÉTRICAS
 if st.session_state.filas:
     df = pd.DataFrame(st.session_state.filas)
     m1, m2, m3, m4, m5 = st.columns(5)
@@ -183,27 +176,25 @@ if st.session_state.filas:
         if label != "":
             col.markdown(f'<div class="header-cell">{label}</div>', unsafe_allow_html=True)
 
-    # Datos (Filas con distancia simétrica controlada)
+    # Filas de datos
     for i, f in enumerate(st.session_state.filas):
-        # Eliminamos el div manual de margen negativo y dejamos que el CSS lo maneje
-        with st.container():
-            r = st.columns([1.5, 0.6, 0.6, 0.8, 1, 0.8, 0.6, 0.8, 0.6, 0.6, 0.6])
-            r[0].markdown(f'<div class="table-cell">{f["TEMP"]}</div>', unsafe_allow_html=True)
-            r[1].markdown(f'<div class="table-cell">{f["PJ"]}</div>', unsafe_allow_html=True)
-            r[2].markdown(f'<div class="table-cell">{f["GOLES"]}</div>', unsafe_allow_html=True)
-            r[3].markdown(f'<div class="table-cell">{f["G_RATE"]:.2f}</div>', unsafe_allow_html=True)
-            r[4].markdown(f'<div class="table-cell">{f["ASIST"]}</div>', unsafe_allow_html=True)
-            r[5].markdown(f'<div class="table-cell">{f["A_RATE"]:.2f}</div>', unsafe_allow_html=True)
-            r[6].markdown(f'<div class="table-cell">{f["GA"]}</div>', unsafe_allow_html=True)
-            r[7].markdown(f'<div class="table-cell">{f["GA_RATE"]:.2f}</div>', unsafe_allow_html=True)
-            r[8].markdown(f'<div class="table-cell">{f["AVG"]:.1f}</div>', unsafe_allow_html=True)
-            with r[9]:
-                if st.button("EDIT", key=f"btn_e_{i}"):
-                    st.session_state.edit_index = i
-                    st.rerun()
-            with r[10]:
-                if st.button("DEL", key=f"btn_d_{i}"):
-                    st.session_state.filas.pop(i)
-                    st.rerun()
+        r = st.columns([1.5, 0.6, 0.6, 0.8, 1, 0.8, 0.6, 0.8, 0.6, 0.6, 0.6])
+        r[0].markdown(f'<div class="table-cell">{f["TEMP"]}</div>', unsafe_allow_html=True)
+        r[1].markdown(f'<div class="table-cell">{f["PJ"]}</div>', unsafe_allow_html=True)
+        r[2].markdown(f'<div class="table-cell">{f["GOLES"]}</div>', unsafe_allow_html=True)
+        r[3].markdown(f'<div class="table-cell">{f["G_RATE"]:.2f}</div>', unsafe_allow_html=True)
+        r[4].markdown(f'<div class="table-cell">{f["ASIST"]}</div>', unsafe_allow_html=True)
+        r[5].markdown(f'<div class="table-cell">{f["A_RATE"]:.2f}</div>', unsafe_allow_html=True)
+        r[6].markdown(f'<div class="table-cell">{f["GA"]}</div>', unsafe_allow_html=True)
+        r[7].markdown(f'<div class="table-cell">{f["GA_RATE"]:.2f}</div>', unsafe_allow_html=True)
+        r[8].markdown(f'<div class="table-cell">{f["AVG"]:.1f}</div>', unsafe_allow_html=True)
+        with r[9]:
+            if st.button("EDIT", key=f"btn_e_{i}"):
+                st.session_state.edit_index = i
+                st.rerun()
+        with r[10]:
+            if st.button("DEL", key=f"btn_d_{i}"):
+                st.session_state.filas.pop(i)
+                st.rerun()
 else:
     st.info("SISTEMA ONLINE. INGRESE REGISTROS.")
