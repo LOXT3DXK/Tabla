@@ -1,9 +1,10 @@
 import streamlit as st
 import pandas as pd
 
-# 1. CONFIGURACIÓN Y ESTILO DEFINITIVO
+# 1. CONFIGURACIÓN
 st.set_page_config(page_title="Stats Lab Pro", layout="wide")
 
+# Estilos CSS
 st.markdown("""
     <style>
     .stApp {
@@ -11,23 +12,33 @@ st.markdown("""
         background-attachment: fixed;
         color: #ffffff;
     }
-    
     .main-title { 
-        font-family: 'Arial Black', sans-serif; 
-        font-size: 2.5rem; 
-        text-transform: uppercase; 
-        margin-bottom: 20px;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-    }
-
-    /* ELIMINAR GAPS DE STREAMLIT EN LA TABLA */
-    [data-testid="column"] {
-        padding: 0px !important;
-        margin: 0px !important;
+        font-family: 'Arial Black', sans-serif; font-size: 2.5rem; 
+        text-transform: uppercase; margin-bottom: 20px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
     }
     
-    [data-testid="stVerticalBlock"] > div {
-        gap: 0rem !important;
+    /* ESTILO DE LA TABLA HTML PURA */
+    .custom-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+        font-family: sans-serif;
+    }
+    .custom-table th {
+        background-color: #1a2639;
+        border: 1px solid #ffffff;
+        padding: 12px;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        font-weight: 900;
+        text-align: center;
+    }
+    .custom-table td {
+        border: 1px solid #ffffff;
+        padding: 10px;
+        background-color: #0b1221;
+        text-align: center;
+        font-weight: 600;
     }
 
     /* INPUTS */
@@ -38,73 +49,14 @@ st.markdown("""
         color: white !important;
         border-radius: 0px !important;
         font-weight: 700 !important;
-        height: 45px !important;
-    }
-
-    /* REJILLA UNIFICADA */
-    .table-cell {
-        border: 1px solid #ffffff;
-        padding: 0px;
-        text-align: center;
-        background-color: #0b1221;
-        min-height: 45px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 600;
-        color: #ffffff;
-        width: 100%;
-        margin: 0px !important;
-    }
-
-    .header-cell {
-        border: 1px solid #ffffff;
-        background-color: #1a2639;
-        font-weight: 900;
-        text-transform: uppercase;
-        font-size: 0.7rem;
-        padding: 10px 2px;
-        text-align: center;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 50px;
-        width: 100%;
-    }
-
-    /* BOTONES */
-    .stButton>button {
-        background-color: rgba(255, 255, 255, 0.1) !important;
-        border: 1px solid #ffffff !important;
-        color: white !important;
-        border-radius: 0px !important;
-        height: 45px !important;
-        width: 100% !important;
-        font-weight: 800 !important;
-        text-transform: uppercase;
-        margin: 0px !important;
-    }
-
-    .stButton>button:hover {
-        background-color: #ffffff !important;
-        color: #0d1b2a !important;
     }
 
     /* MÉTRICAS */
     .metric-box {
-        text-align: center;
-        padding: 10px;
-        border: 1px solid #ffffff;
-        background-color: rgba(0,0,0,0.5);
-        font-size: 0.8rem;
-        text-transform: uppercase;
+        text-align: center; padding: 10px; border: 1px solid #ffffff;
+        background-color: rgba(0,0,0,0.5); font-size: 0.8rem; text-transform: uppercase;
     }
-    .metric-value {
-        font-size: 1.4rem;
-        font-weight: 900;
-        display: block;
-        color: #ffffff;
-    }
+    .metric-value { font-size: 1.4rem; font-weight: 900; display: block; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -129,23 +81,19 @@ with st.container():
     with c3: g_in = st.number_input("Goles", min_value=0, value=def_g, key="input_g")
     with c4: a_in = st.number_input("Asistencias", min_value=0, value=def_a, key="input_a")
 
-    st.write("") # Espacio pequeño
     b1, b2 = st.columns(2)
     with b1:
-        texto_btn = "GUARDAR CAMBIOS" if st.session_state.edit_index is not None else "AGREGAR REGISTRO"
-        if st.button(texto_btn):
+        if st.button("GUARDAR REGISTRO" if st.session_state.edit_index is None else "ACTUALIZAR"):
             if t_in:
                 pj_calc = p_in if p_in > 0 else 1
                 ga = g_in + a_in
                 gar = round(ga/pj_calc, 2) if p_in > 0 else 0.0
-                # Cálculo de nota base corregido
                 avg = round(min(max(gar * 10 / 6, 0.0), 10.0), 1)
                 
                 nueva_data = {
                     "TEMP": t_in, "PJ": p_in, "GOLES": g_in, 
                     "G_RATE": round(g_in/pj_calc, 2) if p_in > 0 else 0.0,
-                    "ASIST": a_in, 
-                    "A_RATE": round(a_in/pj_calc, 2) if p_in > 0 else 0.0, 
+                    "ASIST": a_in, "A_RATE": round(a_in/pj_calc, 2) if p_in > 0 else 0.0, 
                     "GA": ga, "GA_RATE": gar, "AVG": avg
                 }
                 if st.session_state.edit_index is not None:
@@ -160,56 +108,67 @@ with st.container():
             st.session_state.edit_index = None
             st.rerun()
 
-st.write("---")
-
-# 4. RESUMEN DE 5 MÉTRICAS
+# 4. MÉTRICAS
 if st.session_state.filas:
     df = pd.DataFrame(st.session_state.filas)
     m1, m2, m3, m4, m5 = st.columns(5)
-    with m1: st.markdown(f'<div class="metric-box">TOTAL PJ<span class="metric-value">{int(df["PJ"].sum())}</span></div>', unsafe_allow_html=True)
-    with m2: st.markdown(f'<div class="metric-box">TOTAL GOLES<span class="metric-value">{int(df["GOLES"].sum())}</span></div>', unsafe_allow_html=True)
-    with m3: st.markdown(f'<div class="metric-box">TOTAL ASIST<span class="metric-value">{int(df["ASIST"].sum())}</span></div>', unsafe_allow_html=True)
-    with m4: st.markdown(f'<div class="metric-box">TOTAL G/A<span class="metric-value">{int(df["GA"].sum())}</span></div>', unsafe_allow_html=True)
-    with m5: st.markdown(f'<div class="metric-box">AVG GLOBAL<span class="metric-value">{df["AVG"].mean():.1f}</span></div>', unsafe_allow_html=True)
+    m1.markdown(f'<div class="metric-box">TOTAL PJ<span class="metric-value">{int(df["PJ"].sum())}</span></div>', unsafe_allow_html=True)
+    m2.markdown(f'<div class="metric-box">TOTAL GOLES<span class="metric-value">{int(df["GOLES"].sum())}</span></div>', unsafe_allow_html=True)
+    m3.markdown(f'<div class="metric-box">TOTAL ASIST<span class="metric-value">{int(df["ASIST"].sum())}</span></div>', unsafe_allow_html=True)
+    m4.markdown(f'<div class="metric-box">TOTAL G/A<span class="metric-value">{int(df["GA"].sum())}</span></div>', unsafe_allow_html=True)
+    m5.markdown(f'<div class="metric-box">AVG GLOBAL<span class="metric-value">{df["AVG"].mean():.1f}</span></div>', unsafe_allow_html=True)
 
-st.write("")
-
-# 5. TABLA INTEGRADA (CON CORRECCIÓN DE SIMETRÍA)
+# 5. TABLA DEFINITIVA (HTML)
 if st.session_state.filas:
-    # Encabezado
-    with st.container():
-        h = st.columns([1.5, 0.6, 0.6, 0.8, 1, 0.8, 0.6, 0.8, 0.6, 0.6, 0.6])
-        labels = ["TEMPORADA", "PJ", "GOLES", "G RATE", "ASISTENCIAS", "A RATE", "G/A", "G/A RATE", "AVG", "", ""]
-        for col, label in zip(h, labels):
-            if label != "":
-                col.markdown(f'<div class="header-cell">{label}</div>', unsafe_allow_html=True)
-            else:
-                col.markdown('<div style="height:50px;"></div>', unsafe_allow_html=True)
+    # Construimos el HTML de la tabla manualmente para asegurar simetría total
+    html_table = """
+    <table class="custom-table">
+        <thead>
+            <tr>
+                <th>Temporada</th>
+                <th>PJ</th>
+                <th>Goles</th>
+                <th>G Rate</th>
+                <th>Asistencias</th>
+                <th>A Rate</th>
+                <th>G/A</th>
+                <th>G/A Rate</th>
+                <th>AVG</th>
+            </tr>
+        </thead>
+        <tbody>
+    """
+    for f in st.session_state.filas:
+        html_table += f"""
+            <tr>
+                <td>{f['TEMP']}</td>
+                <td>{f['PJ']}</td>
+                <td>{f['GOLES']}</td>
+                <td>{f['G_RATE']:.2f}</td>
+                <td>{f['ASIST']}</td>
+                <td>{f['A_RATE']:.2f}</td>
+                <td>{f['GA']}</td>
+                <td>{f['GA_RATE']:.2f}</td>
+                <td>{f['AVG']:.1f}</td>
+            </tr>
+        """
+    html_table += "</tbody></table>"
+    
+    st.markdown(html_table, unsafe_allow_html=True)
 
-    # Datos
-    for i, f in enumerate(st.session_state.filas):
-        # El contenedor y el margen negativo eliminan el salto de Streamlit
-        with st.container():
-            st.markdown('<div style="margin-top: -1px;"></div>', unsafe_allow_html=True)
-            r = st.columns([1.5, 0.6, 0.6, 0.8, 1, 0.8, 0.6, 0.8, 0.6, 0.6, 0.6])
-            
-            r[0].markdown(f'<div class="table-cell">{f["TEMP"]}</div>', unsafe_allow_html=True)
-            r[1].markdown(f'<div class="table-cell">{f["PJ"]}</div>', unsafe_allow_html=True)
-            r[2].markdown(f'<div class="table-cell">{f["GOLES"]}</div>', unsafe_allow_html=True)
-            r[3].markdown(f'<div class="table-cell">{f["G_RATE"]:.2f}</div>', unsafe_allow_html=True)
-            r[4].markdown(f'<div class="table-cell">{f["ASIST"]}</div>', unsafe_allow_html=True)
-            r[5].markdown(f'<div class="table-cell">{f["A_RATE"]:.2f}</div>', unsafe_allow_html=True)
-            r[6].markdown(f'<div class="table-cell">{f["GA"]}</div>', unsafe_allow_html=True)
-            r[7].markdown(f'<div class="table-cell">{f["GA_RATE"]:.2f}</div>', unsafe_allow_html=True)
-            r[8].markdown(f'<div class="table-cell">{f["AVG"]:.1f}</div>', unsafe_allow_html=True)
-            
-            with r[9]:
-                if st.button("EDIT", key=f"btn_e_{i}"):
-                    st.session_state.edit_index = i
-                    st.rerun()
-            with r[10]:
-                if st.button("DEL", key=f"btn_d_{i}"):
-                    st.session_state.filas.pop(i)
-                    st.rerun()
+    # Controles de edición (separados para no romper la tabla)
+    st.write("")
+    col_ed1, col_ed2 = st.columns([1, 5])
+    with col_ed1:
+        idx_to_edit = st.number_input("ID fila (1, 2...)", min_value=1, max_value=len(st.session_state.filas), step=1)
+    with col_ed2:
+        st.write("") # Alineación visual
+        eb1, eb2, _ = st.columns([1, 1, 4])
+        if eb1.button("EDITAR"):
+            st.session_state.edit_index = idx_to_edit - 1
+            st.rerun()
+        if eb2.button("BORRAR"):
+            st.session_state.filas.pop(idx_to_edit - 1)
+            st.rerun()
 else:
     st.info("SISTEMA ONLINE. INGRESE REGISTROS.")
