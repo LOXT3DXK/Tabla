@@ -1,87 +1,95 @@
 import streamlit as st
 import pandas as pd
 
-# 1. CONFIGURACIÓN Y ESTILO AVANZADO
+# 1. CONFIGURACIÓN Y ESTILO TÉCNICO
 st.set_page_config(page_title="Stats Lab Pro", layout="wide")
 
 st.markdown("""
     <style>
-    /* Degradado de azul profundo */
+    /* Fondo degradado azul oscuro */
     .stApp {
-        background: linear-gradient(180deg, #0d1b2a 0%, #1b263b 50%, #0d1b2a 100%);
+        background: linear-gradient(180deg, #0d1b2a 0%, #1b263b 100%);
         background-attachment: fixed;
         color: #e0e1dd;
     }
     
-    /* Título con peso visual */
+    /* Título limpio sin barras laterales */
     .main-title { 
         font-family: 'Arial Black', sans-serif; 
-        font-size: 3rem; 
+        font-size: 2.8rem; 
         text-transform: uppercase; 
         line-height: 1; 
         margin-bottom: 30px;
         color: #ffffff;
-        border-left: 10px solid #4facfe;
-        padding-left: 20px;
     }
 
-    /* Contenedores de Entrada de Datos (Input Boxes) */
+    /* CORRECCIÓN DE BORDES EN CUADROS RELLENABLES */
+    /* Forzamos el borde en el contenedor y el input para que no desaparezca */
+    .stNumberInput div, .stTextInput div {
+        border-radius: 0px !important;
+    }
+
     .stNumberInput div div input, .stTextInput div div input {
-        background-color: rgba(13, 27, 42, 0.8) !important;
-        border: 2px solid #4facfe !important; /* Borde cian sólido */
+        background-color: rgba(13, 27, 42, 0.9) !important;
+        border: 2px solid #ffffff !important; /* Borde blanco sólido constante */
         color: #ffffff !important;
         border-radius: 0px !important;
-        height: 50px !important;
-        font-size: 1.1rem !important;
+        height: 48px !important;
+        font-size: 1rem !important;
         font-weight: 700 !important;
-        box-shadow: inset 0 0 10px rgba(79, 172, 254, 0.2);
+        padding-left: 15px !important;
     }
 
-    /* Labels - Tipografía más imponente */
+    /* Quitar el borde azul por defecto de Streamlit al hacer foco */
+    .stNumberInput div div input:focus, .stTextInput div div input:focus {
+        border-color: #4facfe !important;
+        box-shadow: none !important;
+    }
+
+    /* Etiquetas de los campos */
     label {
-        color: #4facfe !important;
+        color: #ffffff !important;
         font-family: 'Verdana', sans-serif !important;
         font-weight: 900 !important;
         text-transform: uppercase;
         letter-spacing: 1px;
-        margin-bottom: 8px !important;
+        margin-bottom: 10px !important;
     }
 
-    /* Botones Estilo Consola */
+    /* Botones de acción unificados */
     .stButton>button {
         background-color: transparent !important;
         border: 2px solid #ffffff !important;
         color: #ffffff !important;
         border-radius: 0px !important;
-        height: 50px !important;
+        height: 48px !important;
         width: 100%;
         font-weight: 900 !important;
         text-transform: uppercase;
-        letter-spacing: 2px;
-        transition: 0.4s;
+        transition: 0.3s;
+        margin-top: 5px;
     }
 
     .stButton>button:hover {
         background-color: #ffffff !important;
         color: #0d1b2a !important;
-        box-shadow: 0 0 20px rgba(255,255,255,0.4);
     }
 
-    /* Filas de la tabla manual */
-    .data-row {
-        background-color: rgba(255, 255, 255, 0.05);
-        padding: 15px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        margin-bottom: 5px;
-        border-radius: 4px;
-    }
-
+    /* Estilo de la cabecera de la tabla */
     .header-row {
-        background-color: rgba(79, 172, 254, 0.15);
-        padding: 10px;
-        border-bottom: 2px solid #4facfe;
+        background-color: rgba(255, 255, 255, 0.1);
+        padding: 12px;
+        border-top: 2px solid #ffffff;
+        border-bottom: 2px solid #ffffff;
         font-weight: 900;
         text-transform: uppercase;
+        margin-top: 20px;
+    }
+
+    /* Estilo de las filas de datos */
+    .data-row {
+        padding: 10px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
     }
     </style>
     """, unsafe_allow_html=True)
@@ -94,10 +102,8 @@ if 'filas' not in st.session_state:
 if 'edit_index' not in st.session_state:
     st.session_state.edit_index = None
 
-# 3. PANEL DE CONTROL (INGRESO)
+# 3. PANEL DE INGRESO (CUADROS RELLENABLES)
 with st.container():
-    st.markdown("### 🛠️ CONFIGURACIÓN DE REGISTRO")
-    
     # Valores para edición
     def_temp, def_pj, def_g, def_a = ("", 1, 0, 0)
     if st.session_state.edit_index is not None:
@@ -110,11 +116,11 @@ with st.container():
     with c3: g_in = st.number_input("Goles", min_value=0, value=def_g)
     with c4: a_in = st.number_input("Asistencias", min_value=0, value=def_a)
 
-    # Botones de Acción
+    # Fila de botones de control
     ca, cb = st.columns([1, 1])
     with ca:
         if st.session_state.edit_index is None:
-            if st.button("🚀 AGREGAR NUEVO REGISTRO"):
+            if st.button("AGREGAR REGISTRO"):
                 ga = g_in + a_in
                 gar = round(ga/pj_in, 2)
                 avg = 10.0 if gar >= 6 else (0.0 if gar <= 0 else round((gar * 10) / 6, 1))
@@ -124,7 +130,7 @@ with st.container():
                 })
                 st.rerun()
         else:
-            if st.button("💾 GUARDAR CAMBIOS"):
+            if st.button("GUARDAR CAMBIOS"):
                 ga = g_in + a_in
                 gar = round(ga/pj_in, 2)
                 avg = 10.0 if gar >= 6 else (0.0 if gar <= 0 else round((gar * 10) / 6, 1))
@@ -135,27 +141,28 @@ with st.container():
                 st.session_state.edit_index = None
                 st.rerun()
     with cb:
-        if st.button("🧹 LIMPIAR TODO"):
+        if st.button("LIMPIAR TODO"):
             st.session_state.filas = []
             st.session_state.edit_index = None
             st.rerun()
 
 st.divider()
 
-# 4. DASHBOARD DE RESULTADOS
+# 4. LISTADO DE RESULTADOS
 if st.session_state.filas:
-    # Encabezados Reales
+    # Encabezados
     st.markdown('<div class="header-row">', unsafe_allow_html=True)
     h = st.columns([2, 1, 1, 1, 1, 1, 1, 1, 1, 0.8, 0.8])
-    labels = ["Temporada", "PJ", "Goles", "G Rate", "Asistencias", "A Rate", "G/A", "G/A Rate", "AVG", "Edit", "Del"]
+    labels = ["Temporada", "PJ", "Goles", "G Rate", "Asistencias", "A Rate", "G/A", "G/A Rate", "AVG", "Editar", "Borrar"]
     for col, text in zip(h, labels):
         col.write(text)
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # Datos
+    # Filas de datos
     for i, f in enumerate(st.session_state.filas):
+        st.markdown('<div class="data-row">', unsafe_allow_html=True)
         row = st.columns([2, 1, 1, 1, 1, 1, 1, 1, 1, 0.8, 0.8])
-        row[0].write(f"**{f['TEMP']}**")
+        row[0].write(f['TEMP'])
         row[1].write(f['PJ'])
         row[2].write(f['GOLES'])
         row[3].write(f"{f['G_RATE']:.2f}")
@@ -163,22 +170,23 @@ if st.session_state.filas:
         row[5].write(f"{f['A_RATE']:.2f}")
         row[6].write(f['GA'])
         row[7].write(f"{f['GA_RATE']:.2f}")
-        row[8].write(f"⭐ {f['AVG']:.1f}")
+        row[8].write(f"{f['AVG']:.1f}")
         
-        if row[9].button("✏️", key=f"e_{i}"):
+        # Botones de acción sin iconos de texto, solo etiquetas limpias
+        if row[9].button("EDIT", key=f"e_{i}"):
             st.session_state.edit_index = i
             st.rerun()
-        if row[10].button("❌", key=f"d_{i}"):
+        if row[10].button("DEL", key=f"d_{i}"):
             st.session_state.filas.pop(i)
             st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
 
-    # Métricas Finales
-    st.divider()
+    # Resumen Final
+    st.write("")
     df = pd.DataFrame(st.session_state.filas)
     m1, m2, m3 = st.columns(3)
     m1.metric("PARTIDOS TOTALES", df["PJ"].sum())
     m2.metric("GOLES TOTALES", df["GOLES"].sum())
     m3.metric("RATING PROMEDIO", f"{df['AVG'].mean():.1f}")
-
 else:
-    st.info("SISTEMA DE MONITOREO ACTIVO. INGRESE DATOS PARA COMENZAR.")
+    st.info("SISTEMA ONLINE. INGRESE DATOS.")
