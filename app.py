@@ -1,26 +1,62 @@
 import streamlit as st
 import pandas as pd
 
-# 1. ESTILO Y CONFIGURACIÓN
+# 1. CONFIGURACIÓN Y ESTILO UNIFICADO
 st.set_page_config(page_title="Stats Lab", layout="wide")
 
 st.markdown("""
     <style>
     .stApp { background: linear-gradient(180deg, #000814 0%, #001d3d 100%); background-attachment: fixed; color: white; }
-    .main-title { font-family: 'Arial Black', sans-serif; font-size: 2.5rem; text-transform: uppercase; line-height: 1; margin-bottom: 20px; }
-    .stNumberInput input, .stTextInput input { background-color: rgba(255, 255, 255, 0.1) !important; border: 2px solid white !important; color: white !important; border-radius: 0px !important; height: 45px !important; }
-    .stButton>button { width: 100%; background-color: white; color: #000814; font-weight: 900; text-transform: uppercase; border-radius: 0px; border: 2px solid white; height: 45px; margin-top: 28px; }
-    .stButton>button:hover { background-color: #4facfe; color: white; border-color: #4facfe; }
+    
+    .main-title { 
+        font-family: 'Arial Black', sans-serif; 
+        font-size: 2.5rem; 
+        text-transform: uppercase; 
+        line-height: 1; 
+        margin-bottom: 20px; 
+    }
+
+    /* ESTILO UNIFICADO PARA INPUTS Y BOTONES: Borde blanco, fondo oscuro */
+    .stNumberInput input, .stTextInput input, .stButton>button {
+        background-color: rgba(255, 255, 255, 0.1) !important;
+        border: 2px solid #ffffff !important;
+        color: white !important;
+        border-radius: 0px !important;
+        height: 45px !important;
+        font-family: 'Verdana', sans-serif !important;
+        font-weight: 700 !important;
+        text-transform: uppercase;
+    }
+
+    /* Alineación del botón con los inputs */
+    .stButton>button {
+        margin-top: 28px;
+        transition: 0.3s ease;
+    }
+
+    /* Efecto Hover para los botones */
+    .stButton>button:hover {
+        background-color: rgba(255, 255, 255, 0.3) !important;
+        border-color: #4facfe !important;
+    }
+
+    /* Estilo del Editor de Datos */
+    [data-testid="stDataFrame"] {
+        border: 2px solid #ffffff;
+        background-color: rgba(0, 0, 0, 0.5);
+    }
     </style>
     """, unsafe_allow_html=True)
 
 st.markdown('<h1 class="main-title">STATS LAB<br>PERFORMANCE TRACKER</h1>', unsafe_allow_html=True)
 
-# 2. GESTIÓN DE ESTADO (CON REINICIO AUTOMÁTICO SI HAY ERROR)
+# 2. INICIALIZACIÓN DE DATOS
 if 'filas' not in st.session_state:
-    st.session_state.filas = []
+    st.session_state.filas = pd.DataFrame(columns=[
+        "TEMPORADA", "PJ", "GOLES", "G RATE", "ASIST", "A RATE", "G/A", "G/A RATE", "AVG"
+    ])
 
-# 3. INTERFAZ DE ENTRADA
+# 3. FILA DE ENTRADA (CABECERA)
 c1, c2, c3, c4, c5, c6 = st.columns([2, 1, 1, 1, 1.5, 1.5])
 
 with c1:
@@ -31,19 +67,16 @@ with c3:
     goles_val = st.number_input("GOLES", min_value=0, value=0)
 with c4:
     asist_val = st.number_input("ASIST", min_value=0, value=0)
-
 with c5:
     if st.button("AÑADIR"):
         ga_total = goles_val + asist_val
         ga_rate = round(ga_total / pj_val, 2)
-        
-        # Tu lógica de AVG
+        # Lógica AVG
         if ga_rate >= 6: avg = 10.0
         elif ga_rate <= 0: avg = 0.0
         else: avg = round((ga_rate * 10) / 6, 1)
 
-        # Guardamos con nombres consistentes
-        st.session_state.filas.append({
+        nueva_fila = pd.DataFrame([{
             "TEMPORADA": temp_val,
             "PJ": pj_val,
             "GOLES": goles_val,
@@ -53,39 +86,62 @@ with c5:
             "G/A": ga_total,
             "G/A RATE": ga_rate,
             "AVG": avg
-        })
+        }])
+        st.session_state.filas = pd.concat([st.session_state.filas, nueva_fila], ignore_index=True)
         st.rerun()
 
 with c6:
-    if st.button("BORRAR"):
-        st.session_state.filas = []
+    if st.button("LIMPIAR TODO"):
+        st.session_state.filas = st.session_state.filas.iloc[0:0]
         st.rerun()
 
 st.divider()
 
-# 4. PROCESAMIENTO SEGURO (USANDO .get() PARA EVITAR KEYERROR)
-if st.session_state.filas:
-    try:
-        # Usamos .get(key, 0) para que si no existe la columna, use un 0 en vez de dar error
-        total_pj = sum(int(f.get("PJ", 0)) for f in st.session_state.filas)
-        total_g = sum(int(f.get("GOLES", 0)) for f in st.session_state.filas)
+# 4. TABLA INTERACTIVA (EDITAR Y BORRAR FILAS INDIVIDUALES)
+if not st.session_state.filas.empty:
+    st.subheader("📊 REGISTRO (EDICIÓN DIRECTA ACTIVADA)")
+    st.caption("Puedes editar cualquier dato directamente en la tabla o seleccionar una fila y pulsar 'Suprimir' para borrarla.")
+    
+    # El Data Editor permite editar celdas y borrar filas
+    # Las columnas calculadas se deshabilitan para que no se rompan las fórmulas
+    edited_df = st.data_editor(
+        st.session_state.filas,
+        use_container_width=True,
+        hide_index=False, # Índice útil para identificar filas
+        num_rows="dynamic", # Permite borrar filas seleccionándolas
+        column_config={
+            "G RATE": st.column_config.NumberColumn(disabled=True),
+            "A RATE": st.column_config.NumberColumn(disabled=True),
+            "G/A": st.column_config.NumberColumn(disabled=True),
+            "G/A RATE": st.column_config.NumberColumn(disabled=True),
+            "AVG": st.column_config.NumberColumn(disabled=True),
+        }
+    )
+    
+    # Guardar cambios automáticamente si el usuario edita PJ, G o A
+    if not edited_df.equals(st.session_state.filas):
+        # Recalcular las columnas automáticas tras la edición manual
+        pj_s = edited_df["PJ"].replace(0, 1)
+        edited_df["G RATE"] = (edited_df["GOLES"] / pj_s).round(2)
+        edited_df["A RATE"] = (edited_df["ASIST"] / pj_s).round(2)
+        edited_df["G/A"] = edited_df["GOLES"] + edited_df["ASIST"]
+        edited_df["G/A RATE"] = (edited_df["G/A"] / pj_s).round(2)
         
-        # Evitar división por cero en el promedio general
-        lista_avg = [f.get("AVG", 0) for f in st.session_state.filas]
-        prom_avg = round(sum(lista_avg) / len(lista_avg), 1) if lista_avg else 0.0
-
-        col_m1, col_m2, col_m3 = st.columns(3)
-        col_m1.metric("TOTAL PJ", total_pj)
-        col_m2.metric("TOTAL GOLES", total_g)
-        col_m3.metric("AVG GLOBAL", prom_avg)
-
-        # Mostrar tabla
-        df = pd.DataFrame(st.session_state.filas)
-        st.dataframe(df, use_container_width=True, hide_index=True)
+        def recalc_avg(r):
+            if r >= 6: return 10.0
+            if r <= 0: return 0.0
+            return round((r * 10) / 6, 1)
         
-    except Exception as e:
-        st.error("Se detectó un conflicto de datos viejos. Limpiando sesión...")
-        st.session_state.filas = []
+        edited_df["AVG"] = edited_df["G/A RATE"].apply(recalc_avg)
+        
+        st.session_state.filas = edited_df
         st.rerun()
+
+    # Métricas Globales
+    m1, m2, m3 = st.columns(3)
+    m1.metric("TOTAL PJ", int(st.session_state.filas["PJ"].sum()))
+    m2.metric("TOTAL GOLES", int(st.session_state.filas["GOLES"].sum()))
+    m3.metric("AVG GLOBAL", round(st.session_state.filas["AVG"].mean(), 1))
+
 else:
-    st.info("SISTEMA ONLINE: INGRESA DATOS.")
+    st.info("SISTEMA LISTO. INGRESA DATOS ARRIBA.")
