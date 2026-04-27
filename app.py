@@ -20,6 +20,19 @@ st.markdown("""
         text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
     }
 
+    /* --- CORRECCIÓN DE ESPACIADO --- */
+    /* Forzamos a que Streamlit no añada margen entre elementos de la tabla */
+    [data-testid="stVerticalBlock"] > div:has(div.table-cell) {
+        gap: 0px !important;
+        margin-bottom: -15px !important; /* Ajuste para pegar las filas del bucle */
+    }
+
+    /* Forzamos que los contenedores de los botones no ocupen espacio extra */
+    div[data-testid="stButton"] {
+        margin-top: -3px !important;
+    }
+    /* ------------------------------ */
+
     /* INPUTS */
     .stTextInput input, .stNumberInput input {
         background-color: rgba(0, 0, 0, 0.5) !important;
@@ -62,7 +75,7 @@ st.markdown("""
         width: 100%;
     }
 
-    /* BOTONES - Ajuste de margen para evitar desalineación */
+    /* BOTONES */
     .stButton>button {
         background-color: rgba(255, 255, 255, 0.1) !important;
         border: 1px solid #ffffff !important;
@@ -73,11 +86,6 @@ st.markdown("""
         font-weight: 800 !important;
         text-transform: uppercase;
         margin: 0px !important;
-    }
-    
-    /* CORRECCIÓN CRÍTICA: Elimina el espacio extra que Streamlit reserva para los botones */
-    div[data-testid="stButton"] {
-        margin-top: -1px !important;
     }
 
     .stButton>button:hover {
@@ -163,7 +171,7 @@ if st.session_state.filas:
 
 st.write("")
 
-# 5. TABLA INTEGRADA (CON AJUSTE DE SIMETRÍA)
+# 5. TABLA INTEGRADA
 if st.session_state.filas:
     # Encabezado
     h = st.columns([1.5, 0.6, 0.6, 0.8, 1, 0.8, 0.6, 0.8, 0.6, 0.6, 0.6])
@@ -172,28 +180,27 @@ if st.session_state.filas:
         if label != "":
             col.markdown(f'<div class="header-cell">{label}</div>', unsafe_allow_html=True)
 
-    # Datos (Filas con corrección de margen negativo unificado)
+    # Datos (Filas unificadas)
     for i, f in enumerate(st.session_state.filas):
-        # El margen -8px se aplica a TODAS las filas para que todas suban igual
-        st.markdown('<div style="margin-top:-8px;">', unsafe_allow_html=True) 
-        r = st.columns([1.5, 0.6, 0.6, 0.8, 1, 0.8, 0.6, 0.8, 0.6, 0.6, 0.6])
-        r[0].markdown(f'<div class="table-cell">{f["TEMP"]}</div>', unsafe_allow_html=True)
-        r[1].markdown(f'<div class="table-cell">{f["PJ"]}</div>', unsafe_allow_html=True)
-        r[2].markdown(f'<div class="table-cell">{f["GOLES"]}</div>', unsafe_allow_html=True)
-        r[3].markdown(f'<div class="table-cell">{f["G_RATE"]:.2f}</div>', unsafe_allow_html=True)
-        r[4].markdown(f'<div class="table-cell">{f["ASIST"]}</div>', unsafe_allow_html=True)
-        r[5].markdown(f'<div class="table-cell">{f["A_RATE"]:.2f}</div>', unsafe_allow_html=True)
-        r[6].markdown(f'<div class="table-cell">{f["GA"]}</div>', unsafe_allow_html=True)
-        r[7].markdown(f'<div class="table-cell">{f["GA_RATE"]:.2f}</div>', unsafe_allow_html=True)
-        r[8].markdown(f'<div class="table-cell">{f["AVG"]:.1f}</div>', unsafe_allow_html=True)
-        with r[9]:
-            if st.button("EDIT", key=f"btn_e_{i}"):
-                st.session_state.edit_index = i
-                st.rerun()
-        with r[10]:
-            if st.button("DEL", key=f"btn_d_{i}"):
-                st.session_state.filas.pop(i)
-                st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
+        # El contenedor principal del bucle
+        with st.container():
+            r = st.columns([1.5, 0.6, 0.6, 0.8, 1, 0.8, 0.6, 0.8, 0.6, 0.6, 0.6])
+            r[0].markdown(f'<div class="table-cell">{f["TEMP"]}</div>', unsafe_allow_html=True)
+            r[1].markdown(f'<div class="table-cell">{f["PJ"]}</div>', unsafe_allow_html=True)
+            r[2].markdown(f'<div class="table-cell">{f["GOLES"]}</div>', unsafe_allow_html=True)
+            r[3].markdown(f'<div class="table-cell">{f["G_RATE"]:.2f}</div>', unsafe_allow_html=True)
+            r[4].markdown(f'<div class="table-cell">{f["ASIST"]}</div>', unsafe_allow_html=True)
+            r[5].markdown(f'<div class="table-cell">{f["A_RATE"]:.2f}</div>', unsafe_allow_html=True)
+            r[6].markdown(f'<div class="table-cell">{f["GA"]}</div>', unsafe_allow_html=True)
+            r[7].markdown(f'<div class="table-cell">{f["GA_RATE"]:.2f}</div>', unsafe_allow_html=True)
+            r[8].markdown(f'<div class="table-cell">{f["AVG"]:.1f}</div>', unsafe_allow_html=True)
+            with r[9]:
+                if st.button("EDIT", key=f"btn_e_{i}"):
+                    st.session_state.edit_index = i
+                    st.rerun()
+            with r[10]:
+                if st.button("DEL", key=f"btn_d_{i}"):
+                    st.session_state.filas.pop(i)
+                    st.rerun()
 else:
     st.info("SISTEMA ONLINE. INGRESE REGISTROS.")
