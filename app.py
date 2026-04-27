@@ -1,12 +1,11 @@
 import streamlit as st
 import pandas as pd
 
-# 1. CONFIGURACIÓN Y ESTILO CON DEGRADADO INTENSO
+# 1. CONFIGURACIÓN Y ESTILO DEFINITIVO
 st.set_page_config(page_title="Stats Lab Pro", layout="wide")
 
 st.markdown("""
     <style>
-    /* Degradado más notorio: de negro azulado a azul vibrante */
     .stApp {
         background: linear-gradient(180deg, #050a14 0%, #0d1b2a 40%, #1e3a8a 80%, #3b82f6 100%);
         background-attachment: fixed;
@@ -32,7 +31,7 @@ st.markdown("""
         height: 45px !important;
     }
 
-    /* CELDAS UNIFICADAS */
+    /* REJILLA UNIFICADA: Eliminamos espacios entre celdas */
     .table-cell {
         border: 1px solid #ffffff;
         padding: 0px;
@@ -45,9 +44,9 @@ st.markdown("""
         font-weight: 600;
         color: #ffffff;
         width: 100%;
+        margin: 0px !important; /* Asegura que no haya separación */
     }
 
-    /* ENCABEZADO SIN BORDES AL FINAL */
     .header-cell {
         border: 1px solid #ffffff;
         background-color: #1a2639;
@@ -79,14 +78,22 @@ st.markdown("""
     .stButton>button:hover {
         background-color: #ffffff !important;
         color: #0d1b2a !important;
-        box-shadow: 0px 0px 15px rgba(255,255,255,0.3);
     }
 
+    /* CUADROS DE MÉTRICAS (AHORA 5) */
     .metric-box {
         text-align: center;
-        padding: 15px;
-        border: 2px solid #ffffff;
+        padding: 10px;
+        border: 1px solid #ffffff;
         background-color: rgba(0,0,0,0.5);
+        font-size: 0.8rem;
+        text-transform: uppercase;
+    }
+    .metric-value {
+        font-size: 1.4rem;
+        font-weight: 900;
+        display: block;
+        color: #ffffff;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -101,15 +108,10 @@ if 'edit_index' not in st.session_state:
 
 # 3. PANEL DE INGRESO
 with st.container():
-    def_temp = ""
-    def_pj, def_g, def_a = 0, 0, 0
-    
+    def_temp, def_pj, def_g, def_a = ("", 0, 0, 0)
     if st.session_state.edit_index is not None:
         e = st.session_state.filas[st.session_state.edit_index]
-        def_temp = e['TEMP']
-        def_pj = e['PJ']
-        def_g = e['GOLES']
-        def_a = e['ASIST']
+        def_temp, def_pj, def_g, def_a = e['TEMP'], e['PJ'], e['GOLES'], e['ASIST']
 
     c1, c2, c3, c4 = st.columns([3, 1, 1, 1])
     with c1: t_in = st.text_input("Temporada / Mes", value=def_temp, key="input_temp")
@@ -125,6 +127,7 @@ with st.container():
                 pj_calc = p_in if p_in > 0 else 1
                 ga = g_in + a_in
                 gar = round(ga/pj_calc, 2) if p_in > 0 else 0.0
+                # Cálculo de nota base según tu fórmula de G/A rate
                 avg = 10.0 if gar >= 6 else (0.0 if gar <= 0 else round((gar * 10) / 6, 1))
                 
                 nueva_data = {
@@ -132,7 +135,6 @@ with st.container():
                     "ASIST": a_in, "A_RATE": round(a_in/pj_calc, 2) if p_in > 0 else 0.0, 
                     "GA": ga, "GA_RATE": gar, "AVG": avg
                 }
-                
                 if st.session_state.edit_index is not None:
                     st.session_state.filas[st.session_state.edit_index] = nueva_data
                     st.session_state.edit_index = None
@@ -145,29 +147,31 @@ with st.container():
             st.session_state.edit_index = None
             st.rerun()
 
-# 4. MÉTRICAS
+# 4. RESUMEN DE 5 MÉTRICAS
 if st.session_state.filas:
     df = pd.DataFrame(st.session_state.filas)
-    m1, m2, m3 = st.columns(3)
-    with m1: st.markdown(f'<div class="metric-box">TOTAL PJ<br><b>{int(df["PJ"].sum())}</b></div>', unsafe_allow_html=True)
-    with m2: st.markdown(f'<div class="metric-box">TOTAL GOLES<br><b>{int(df["GOLES"].sum())}</b></div>', unsafe_allow_html=True)
-    with m3: st.markdown(f'<div class="metric-box">AVG GLOBAL<br><b>{df["AVG"].mean():.1f}</b></div>', unsafe_allow_html=True)
+    m1, m2, m3, m4, m5 = st.columns(5)
+    with m1: st.markdown(f'<div class="metric-box">TOTAL PJ<span class="metric-value">{int(df["PJ"].sum())}</span></div>', unsafe_allow_html=True)
+    with m2: st.markdown(f'<div class="metric-box">TOTAL GOLES<span class="metric-value">{int(df["GOLES"].sum())}</span></div>', unsafe_allow_html=True)
+    with m3: st.markdown(f'<div class="metric-box">TOTAL ASIST<span class="metric-value">{int(df["ASIST"].sum())}</span></div>', unsafe_allow_html=True)
+    with m4: st.markdown(f'<div class="metric-box">TOTAL G/A<span class="metric-value">{int(df["GA"].sum())}</span></div>', unsafe_allow_html=True)
+    with m5: st.markdown(f'<div class="metric-box">AVG GLOBAL<span class="metric-value">{df["AVG"].mean():.1f}</span></div>', unsafe_allow_html=True)
 
 st.write("")
 
-# 5. TABLA (ENCABEZADO LIMPIO)
+# 5. TABLA INTEGRADA
 if st.session_state.filas:
-    # Encabezado: Solo definimos bordes para las columnas con texto
+    # Encabezado
     h = st.columns([1.5, 0.6, 0.6, 0.8, 1, 0.8, 0.6, 0.8, 0.6, 0.6, 0.6])
     labels = ["TEMPORADA", "PJ", "GOLES", "G RATE", "ASISTENCIAS", "A RATE", "G/A", "G/A RATE", "AVG", "", ""]
-    
-    for idx, (col, label) in enumerate(zip(h, labels)):
-        if label != "": # Solo dibuja el cuadro si tiene texto
+    for col, label in zip(h, labels):
+        if label != "":
             col.markdown(f'<div class="header-cell">{label}</div>', unsafe_allow_html=True)
-        # Las columnas de EDIT y DEL (vacías) no reciben el div con borde
 
-    # Filas de Datos (Estas sí mantienen sus botones)
+    # Datos (Filas pegadas)
     for i, f in enumerate(st.session_state.filas):
+        # Ajustamos el espaciado entre filas con un pequeño contenedor para evitar el gap de Streamlit
+        st.markdown('<div style="margin-top:-8px;">', unsafe_allow_html=True) 
         r = st.columns([1.5, 0.6, 0.6, 0.8, 1, 0.8, 0.6, 0.8, 0.6, 0.6, 0.6])
         r[0].markdown(f'<div class="table-cell">{f["TEMP"]}</div>', unsafe_allow_html=True)
         r[1].markdown(f'<div class="table-cell">{f["PJ"]}</div>', unsafe_allow_html=True)
@@ -178,7 +182,6 @@ if st.session_state.filas:
         r[6].markdown(f'<div class="table-cell">{f["GA"]}</div>', unsafe_allow_html=True)
         r[7].markdown(f'<div class="table-cell">{f["GA_RATE"]:.2f}</div>', unsafe_allow_html=True)
         r[8].markdown(f'<div class="table-cell">{f["AVG"]:.1f}</div>', unsafe_allow_html=True)
-        
         with r[9]:
             if st.button("EDIT", key=f"btn_e_{i}"):
                 st.session_state.edit_index = i
@@ -187,5 +190,6 @@ if st.session_state.filas:
             if st.button("DEL", key=f"btn_d_{i}"):
                 st.session_state.filas.pop(i)
                 st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
 else:
     st.info("SISTEMA ONLINE. INGRESE REGISTROS.")
