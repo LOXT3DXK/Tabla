@@ -1,96 +1,65 @@
 import streamlit as st
 import pandas as pd
 
-st.set_page_config(page_title="Performance Tracker", layout="wide")
+st.set_page_config(page_title="Stats Tracker", layout="wide")
 
-# Estilo visual Cyberpunk/Futbolístico
-st.markdown("""
-    <style>
-    .stApp { background: linear-gradient(to bottom, #000d1a, #000000); color: white; }
-    [data-testid="stMetricValue"] { color: #00d4ff; }
-    </style>
-    """, unsafe_allow_html=True)
+# Título con estilo
+st.title("📊 Control de Estadísticas")
 
-st.title("📊 Stats Performance App")
+# 1. Inicializar la lista de datos en el estado de la sesión
+if 'filas' not in st.session_state:
+    st.session_state.filas = []
 
-# 1. Estructura base de las columnas de entrada
-COLUMNAS_INPUT = ["Mes o Temporada", "PJ", "Goles", "Asistencias"]
-
-# 2. Inicializar el estado de los datos de entrada
-if 'raw_data' not in st.session_state:
-    st.session_state.raw_data = pd.DataFrame([{
-        "Mes o Temporada": "Enero",
-        "PJ": 0, "Goles": 0, "Asistencias": 0
-    }])
-
-# 3. Interfaz de Edición
-st.subheader("📝 Entrada de Datos")
-st.caption("Añade filas con el botón (+) al final de la tabla. PJ debe ser mayor a 0 para calcular rates.")
-
-# Editor simplificado: Solo lo que el usuario DEBE escribir
-input_df = st.data_editor(
-    st.session_state.raw_data,
-    num_rows="dynamic",
-    max_rows=30,
-    column_config={
-        "Mes o Temporada": st.column_config.TextColumn(required=True),
-        "PJ": st.column_config.NumberColumn(min_value=0, default=0),
-        "Goles": st.column_config.NumberColumn(min_value=0, default=0),
-        "Asistencias": st.column_config.NumberColumn(min_value=0, default=0),
-    },
-    hide_index=True,
-    use_container_width=True,
-    key="editor_principal"
-)
-
-# 4. Lógica de cálculo (Se ejecuta siempre sobre el input_df)
-def procesar_stats(df):
-    df_calc = df.copy()
-    # Evitar división por cero
-    pj_safe = df_calc['PJ'].apply(lambda x: x if x > 0 else 1)
+# 2. Formulario de entrada (Más estable que el data_editor directo)
+with st.expander("➕ Añadir Nueva Entrada", expanded=True):
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        temp = st.text_input("Mes o Temporada", placeholder="Enero")
+    with col2:
+        pj = st.number_input("PJ", min_value=1, step=1, value=1)
+    with col3:
+        goles = st.number_input("Goles", min_value=0, step=1, value=0)
+    with col4:
+        asist = st.number_input("Asistencias", min_value=0, step=1, value=0)
     
-    df_calc['G Rate'] = (df_calc['Goles'] / pj_safe).round(2)
-    df_calc['A Rate'] = (df_calc['Asistencias'] / pj_safe).round(2)
-    df_calc['G/A'] = df_calc['Goles'] + df_calc['Asistencias']
-    df_calc['G/A Rate'] = (df_calc['G/A'] / pj_safe).round(2)
+    if st.button("Agregar a la Tabla"):
+        # Lógica de cálculos al momento de insertar
+        g_rate = round(goles / pj, 2)
+        a_rate = round(asist / pj, 2)
+        ga = goles + asist
+        ga_rate = round(ga / pj, 2)
+        
+        # Lógica de tu AVG (Escala 0-10 basada en GA Rate de 6)
+        if ga_rate >= 6:
+            avg = 10.0
+        elif ga_rate <= 0:
+            avg = 0.0
+        else:
+            avg = round((ga_rate * 10) / 6, 1)
+
+        nueva_fila = {
+            "Mes o Temporada": temp,
+            "PJ": pj,
+            "Goles": goles,
+            "G Rate": g_rate,
+            "Asistencias": asist,
+            "A Rate": a_rate,
+            "G/A": ga,
+            "G/A Rate": ga_rate,
+            "AVG": avg
+        }
+        st.session_state.filas.append(nueva_fila)
+        st.success("¡Fila agregada!")
+
+# 3. Mostrar la tabla de resultados
+if st.session_state.filas:
+    df = pd.DataFrame(st.session_state.filas)
     
-    def calcular_avg(rate):
-        if rate >= 6: return 10.0
-        if rate <= 0: return 0.0
-        return round((rate * 10) / 6, 1)
-    
-    df_calc['AVG'] = df_calc['G/A Rate'].apply(calcular_avg)
-    
-    # Reordenar columnas para que coincida con tu pedido
-    columnas_finales = [
-        "Mes o Temporada", "PJ", "Goles", "G Rate", 
-        "Asistencias", "A Rate", "G/A", "G/A Rate", "AVG"
-    ]
-    return df_calc[columnas_finales]
+    st.subheader("📈 Tus Estadísticas")
+    st.table(df) # st.table es la opción más estable contra errores de servidor
 
-# 5. Mostrar Resultados
-st.divider()
-st.subheader("📈 Tabla de Resultados Reales")
-
-# Procesamos los datos actuales del editor
-df_final = procesar_stats(input_df)
-
-# Mostramos la tabla final (estática, no editable para evitar errores)
-st.dataframe(
-    df_final,
-    column_config={
-        "AVG": st.column_config.NumberColumn(format="%.1f pts ⭐"),
-        "G Rate": st.column_config.NumberColumn(format="%.2f"),
-        "A Rate": st.column_config.NumberColumn(format="%.2f"),
-        "G/A Rate": st.column_config.NumberColumn(format="%.2f"),
-    },
-    hide_index=True,
-    use_container_width=True
-)
-
-# Métricas rápidas
-if not df_final.empty:
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Total PJ", df_final['PJ'].sum())
-    c2.metric("Total G/A", df_final['G/A'].sum())
-    c3.metric("AVG Promedio", f"{df_final['AVG'].mean():.1f}")
+    if st.button("Limpiar Tabla"):
+        st.session_state.filas = []
+        st.rerun()
+else:
+    st.info("Aún no hay datos. Usa el formulario de arriba para empezar.")
