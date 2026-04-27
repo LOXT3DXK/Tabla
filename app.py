@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 
-# 1. CONFIGURACIÓN Y ESTILO DEFINITIVO (REJILLA SIN ESPACIOS)
+# 1. CONFIGURACIÓN Y ESTILO DEFINITIVO (ESPACIADO UNIFORME)
 st.set_page_config(page_title="Stats Lab Pro", layout="wide")
 
 st.markdown("""
@@ -30,19 +30,19 @@ st.markdown("""
         height: 45px !important;
     }
 
-    /* ESTILO DE CELDAS PARA EVITAR DESFASES */
+    /* CELDAS CON SEPARACIÓN CONTROLADA */
     .table-cell {
         border: 1px solid #ffffff;
         padding: 0px;
         text-align: center;
         background-color: #0b1221;
-        height: 45px; /* Altura fija para simetría total */
+        height: 45px;
         display: flex;
         align-items: center;
         justify-content: center;
         font-weight: 600;
         color: #ffffff;
-        margin-bottom: -1px; /* Solapa bordes para que no se vean dobles */
+        margin-bottom: 8px !important; /* Separación fija para todas las filas */
     }
 
     .header-cell {
@@ -55,10 +55,10 @@ st.markdown("""
         display: flex;
         align-items: center;
         justify-content: center;
-        margin-bottom: -1px;
+        margin-bottom: 12px; /* Un poco más de espacio bajo el encabezado */
     }
 
-    /* BOTONES TOTALMENTE AJUSTADOS */
+    /* BOTONES AJUSTADOS AL MARGEN DE LA FILA */
     .stButton>button {
         background-color: rgba(255, 255, 255, 0.1) !important;
         border: 1px solid #ffffff !important;
@@ -67,8 +67,7 @@ st.markdown("""
         height: 45px !important;
         width: 100% !important;
         font-weight: 800 !important;
-        margin: 0px !important;
-        padding: 0px !important;
+        margin-bottom: 8px !important; /* Misma separación que las celdas */
     }
 
     .stButton>button:hover {
@@ -88,10 +87,9 @@ st.markdown("""
         display: block;
     }
     
-    /* ELIMINAR ESPACIADO INTERNO DE COLUMNAS STREAMLIT */
+    /* RESET DE COLUMNAS */
     [data-testid="column"] {
         padding: 0px !important;
-        gap: 0px !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -155,9 +153,8 @@ if st.session_state.filas:
 
 st.write("")
 
-# 5. TABLA SIMÉTRICA (CORRECCIÓN DE SEPARACIÓN)
+# 5. TABLA CON SEPARACIÓN IGUALITARIA
 if st.session_state.filas:
-    # Definimos los anchos de columna una sola vez
     anchos = [1.5, 0.6, 0.6, 0.8, 1, 0.8, 0.6, 0.8, 0.6, 0.6, 0.6]
     
     # Encabezado
@@ -169,8 +166,6 @@ if st.session_state.filas:
 
     # Filas de Datos
     for i, f in enumerate(st.session_state.filas):
-        # El truco para que no haya separación es usar un solo bloque de columnas
-        # y forzar el margen negativo en el CSS de arriba (.table-cell)
         r = st.columns(anchos)
         r[0].markdown(f'<div class="table-cell">{f["TEMP"]}</div>', unsafe_allow_html=True)
         r[1].markdown(f'<div class="table-cell">{f["PJ"]}</div>', unsafe_allow_html=True)
