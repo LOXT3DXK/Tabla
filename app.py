@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 
-# 1. CONFIGURACIÓN Y ESTILO DEFINITIVO
+# 1. CONFIGURACIÓN Y ESTILO DEFINITIVO (REJILLA SIN ESPACIOS)
 st.set_page_config(page_title="Stats Lab Pro", layout="wide")
 
 st.markdown("""
@@ -17,7 +17,6 @@ st.markdown("""
         font-size: 2.5rem; 
         text-transform: uppercase; 
         margin-bottom: 20px;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
     }
 
     /* INPUTS */
@@ -31,19 +30,19 @@ st.markdown("""
         height: 45px !important;
     }
 
-    /* REJILLA UNIFICADA */
+    /* ESTILO DE CELDAS PARA EVITAR DESFASES */
     .table-cell {
         border: 1px solid #ffffff;
         padding: 0px;
         text-align: center;
         background-color: #0b1221;
-        min-height: 45px;
+        height: 45px; /* Altura fija para simetría total */
         display: flex;
         align-items: center;
         justify-content: center;
         font-weight: 600;
         color: #ffffff;
-        width: 100%;
+        margin-bottom: -1px; /* Solapa bordes para que no se vean dobles */
     }
 
     .header-cell {
@@ -52,16 +51,14 @@ st.markdown("""
         font-weight: 900;
         text-transform: uppercase;
         font-size: 0.7rem;
-        padding: 10px 2px;
-        text-align: center;
+        height: 50px;
         display: flex;
         align-items: center;
         justify-content: center;
-        min-height: 50px;
-        width: 100%;
+        margin-bottom: -1px;
     }
 
-    /* BOTONES */
+    /* BOTONES TOTALMENTE AJUSTADOS */
     .stButton>button {
         background-color: rgba(255, 255, 255, 0.1) !important;
         border: 1px solid #ffffff !important;
@@ -70,8 +67,8 @@ st.markdown("""
         height: 45px !important;
         width: 100% !important;
         font-weight: 800 !important;
-        text-transform: uppercase;
         margin: 0px !important;
+        padding: 0px !important;
     }
 
     .stButton>button:hover {
@@ -79,20 +76,22 @@ st.markdown("""
         color: #0d1b2a !important;
     }
 
-    /* MÉTRICAS */
     .metric-box {
         text-align: center;
         padding: 10px;
         border: 1px solid #ffffff;
         background-color: rgba(0,0,0,0.5);
-        font-size: 0.8rem;
-        text-transform: uppercase;
     }
     .metric-value {
         font-size: 1.4rem;
         font-weight: 900;
         display: block;
-        color: #ffffff;
+    }
+    
+    /* ELIMINAR ESPACIADO INTERNO DE COLUMNAS STREAMLIT */
+    [data-testid="column"] {
+        padding: 0px !important;
+        gap: 0px !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -107,17 +106,12 @@ if 'edit_index' not in st.session_state:
 
 # 3. PANEL DE INGRESO
 with st.container():
-    # Valores por defecto
-    def_temp, def_pj, def_g, def_a = "", 0, 0, 0
-    
-    # Si estamos editando, cargar los datos de la fila seleccionada
+    def_temp, def_pj, def_g, def_a = ("", 0, 0, 0)
     if st.session_state.edit_index is not None:
-        idx = st.session_state.edit_index
-        e = st.session_state.filas[idx]
+        e = st.session_state.filas[st.session_state.edit_index]
         def_temp, def_pj, def_g, def_a = e['TEMP'], e['PJ'], e['GOLES'], e['ASIST']
 
     c1, c2, c3, c4 = st.columns([3, 1, 1, 1])
-    # Importante: el valor 'value' se actualiza con def_X
     t_in = c1.text_input("Temporada / Mes", value=def_temp)
     p_in = c2.number_input("Partidos", min_value=0, value=def_pj)
     g_in = c3.number_input("Goles", min_value=0, value=def_g)
@@ -132,16 +126,14 @@ with st.container():
                 ga = g_in + a_in
                 gar = round(ga/pj_calc, 2) if p_in > 0 else 0.0
                 avg = 10.0 if gar >= 6 else (0.0 if gar <= 0 else round((gar * 10) / 6, 1))
-                
                 nueva_data = {
                     "TEMP": t_in, "PJ": p_in, "GOLES": g_in, "G_RATE": round(g_in/pj_calc, 2) if p_in > 0 else 0.0,
                     "ASIST": a_in, "A_RATE": round(a_in/pj_calc, 2) if p_in > 0 else 0.0, 
                     "GA": ga, "GA_RATE": gar, "AVG": avg
                 }
-                
                 if st.session_state.edit_index is not None:
                     st.session_state.filas[st.session_state.edit_index] = nueva_data
-                    st.session_state.edit_index = None # Resetear modo edición
+                    st.session_state.edit_index = None
                 else:
                     st.session_state.filas.append(nueva_data)
                 st.rerun()
@@ -163,20 +155,23 @@ if st.session_state.filas:
 
 st.write("")
 
-# 5. TABLA (FILAS JUNTAS Y MODO EDIT FUNCIONANDO)
+# 5. TABLA SIMÉTRICA (CORRECCIÓN DE SEPARACIÓN)
 if st.session_state.filas:
+    # Definimos los anchos de columna una sola vez
+    anchos = [1.5, 0.6, 0.6, 0.8, 1, 0.8, 0.6, 0.8, 0.6, 0.6, 0.6]
+    
     # Encabezado
-    h = st.columns([1.5, 0.6, 0.6, 0.8, 1, 0.8, 0.6, 0.8, 0.6, 0.6, 0.6])
+    h = st.columns(anchos)
     labels = ["TEMPORADA", "PJ", "GOLES", "G RATE", "ASISTENCIAS", "A RATE", "G/A", "G/A RATE", "AVG", "", ""]
     for col, label in zip(h, labels):
-        if label != "":
+        if label:
             col.markdown(f'<div class="header-cell">{label}</div>', unsafe_allow_html=True)
 
-    # Datos
+    # Filas de Datos
     for i, f in enumerate(st.session_state.filas):
-        # El margen negativo -8px elimina la separación entre filas que pone Streamlit
-        st.markdown('<div style="margin-top:-8px;">', unsafe_allow_html=True) 
-        r = st.columns([1.5, 0.6, 0.6, 0.8, 1, 0.8, 0.6, 0.8, 0.6, 0.6, 0.6])
+        # El truco para que no haya separación es usar un solo bloque de columnas
+        # y forzar el margen negativo en el CSS de arriba (.table-cell)
+        r = st.columns(anchos)
         r[0].markdown(f'<div class="table-cell">{f["TEMP"]}</div>', unsafe_allow_html=True)
         r[1].markdown(f'<div class="table-cell">{f["PJ"]}</div>', unsafe_allow_html=True)
         r[2].markdown(f'<div class="table-cell">{f["GOLES"]}</div>', unsafe_allow_html=True)
@@ -188,16 +183,12 @@ if st.session_state.filas:
         r[8].markdown(f'<div class="table-cell">{f["AVG"]:.1f}</div>', unsafe_allow_html=True)
         
         with r[9]:
-            # Al presionar EDIT, guardamos el índice y recargamos
-            if st.button("EDIT", key=f"edit_{i}"):
+            if st.button("EDIT", key=f"e_{i}"):
                 st.session_state.edit_index = i
                 st.rerun()
         with r[10]:
-            if st.button("DEL", key=f"del_{i}"):
+            if st.button("DEL", key=f"d_{i}"):
                 st.session_state.filas.pop(i)
-                if st.session_state.edit_index == i:
-                    st.session_state.edit_index = None
                 st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
 else:
     st.info("SISTEMA ONLINE. INGRESE REGISTROS.")
