@@ -1,142 +1,150 @@
 import streamlit as st
 import pandas as pd
 
-# Configuración de la página - compacta
-st.set_page_config(page_title="Stats Lab", layout="wide")
+# Configuración de la página
+st.set_page_config(page_title="Stats Lab Performance Tracker", layout="wide")
 
-# CSS para fondo oscuro, degradado y diseño compacto
+# CSS para fondo oscuro, degradado y diseño unificado
 st.markdown("""
     <style>
-    /* Fondo degradado más oscuro (Azul Noche a Negro) */
+    /* Fondo degradado oscuro (Azul Noche a Negro) */
     .stApp {
-        background: linear-gradient(180deg, #001529 0%, #000000 100%);
+        background: linear-gradient(180deg, #000814 0%, #001d3d 100%);
         background-attachment: fixed;
         color: #ffffff;
     }
     
-    /* Título imponente pero más pequeño para ahorrar espacio */
+    /* Título imponente pero equilibrado */
     .main-title {
         font-family: 'Arial Black', sans-serif;
-        font-size: 2.2rem;
-        letter-spacing: -1px;
+        font-size: 2.8rem;
+        letter-spacing: -1.5px;
         text-transform: uppercase;
         color: #ffffff;
-        margin-bottom: -10px;
-    }
-
-    /* Reducción de espacios (Padding) generales */
-    .block-container {
-        padding-top: 2rem !important;
-        padding-bottom: 1rem !important;
+        text-align: left;
+        margin-bottom: 5px;
     }
 
     /* Fuentes robustas y sólidas */
     h2, h3, p, span, label {
         font-family: 'Verdana', sans-serif !important;
         font-weight: 700 !important;
-        font-size: 0.9rem !important;
+        color: #ffffff !important;
     }
 
-    /* Input compactos */
-    .stNumberInput, .stTextInput {
-        margin-bottom: -15px;
+    /* Estilo para los inputs para que no desentonen */
+    .stNumberInput input, .stTextInput input {
+        background-color: rgba(255, 255, 255, 0.1) !important;
+        border: 2px solid #ffffff !important;
+        color: white !important;
+        border-radius: 0px !important;
     }
 
-    /* Botón sólido */
+    /* Botones sólidos que encajan con la interfaz */
     .stButton>button {
+        width: 100%;
         background-color: #ffffff;
-        color: #001529;
+        color: #000814;
         font-weight: 900;
-        border-radius: 2px;
-        border: none;
-        padding: 5px;
-        height: 40px;
+        text-transform: uppercase;
+        border-radius: 0px;
+        border: 2px solid #ffffff;
+        height: 45px;
+        margin-top: 24px; /* Alineación con los inputs */
+        transition: 0.3s;
     }
     
     .stButton>button:hover {
         background-color: #4facfe;
         color: #ffffff;
+        border-color: #4facfe;
     }
 
-    /* Tabla compacta */
+    /* Estilo de la tabla */
     [data-testid="stDataFrame"] {
-        background-color: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: 2px solid #ffffff;
+        background-color: rgba(0, 0, 0, 0.5);
     }
     </style>
     """, unsafe_allow_html=True)
 
-# Título
-st.markdown('<h1 class="main-title">PERFORMANCE TRACKER</h1>', unsafe_allow_html=True)
+# Título de la App
+st.markdown('<h1 class="main-title">STATS LAB<br>PERFORMANCE TRACKER</h1>', unsafe_allow_html=True)
 st.divider()
 
-# Inicializar estado
+# Inicializar estado de la sesión
 if 'filas' not in st.session_state:
     st.session_state.filas = []
 
-# Sección de Entrada - Layout más apretado
-with st.container():
-    c1, c2, c3, c4, c5 = st.columns([2, 1, 1, 1, 1.5])
+# --- FILA DE ENTRADA Y ACCIONES ---
+# Usamos una sola fila para que todo se vea como una misma herramienta
+c1, c2, c3, c4, c5, c6 = st.columns([2, 1, 1, 1, 1.5, 1.5])
+
+with c1:
+    temp = st.text_input("TEMPORADA", placeholder="EJ: ABRIL")
+with c2:
+    pj = st.number_input("PJ", min_value=1, step=1, value=1)
+with c3:
+    goles = st.number_input("G", min_value=0, step=1, value=0)
+with c4:
+    asist = st.number_input("A", min_value=0, step=1, value=0)
+with c5:
+    # Botón Añadir integrado
+    btn_add = st.button("AÑADIR")
+with c6:
+    # Botón Borrar integrado
+    btn_clear = st.button("BORRAR TODO")
+
+# Lógica del botón Añadir
+if btn_add:
+    g_rate = round(goles / pj, 2)
+    a_rate = round(asist / pj, 2)
+    ga_total = goles + asist
+    ga_rate = round(ga_total / pj, 2)
     
-    with c1:
-        temp = st.text_input("MES/TEMP", placeholder="EJ: ABRIL")
-    with c2:
-        pj = st.number_input("PJ", min_value=1, step=1, value=1)
-    with c3:
-        goles = st.number_input("G", min_value=0, step=1, value=0)
-    with c4:
-        asist = st.number_input("A", min_value=0, step=1, value=0)
-    with c5:
-        st.write(" ") # Espaciador para alinear botón
-        st.write(" ") 
-        btn_add = st.button("AÑADIR STATS")
+    # Lógica AVG (0-10)
+    if ga_rate >= 6:
+        avg = 10.0
+    elif ga_rate <= 0:
+        avg = 0.0
+    else:
+        avg = round((ga_rate * 10) / 6, 1)
 
-    if btn_add:
-        # Cálculos redondeados
-        g_rate = round(goles / pj, 2)
-        a_rate = round(asist / pj, 2)
-        ga_total = goles + asist
-        ga_rate = round(ga_total / pj, 2)
-        
-        # Lógica AVG (0-10)
-        if ga_rate >= 6:
-            avg = 10.0
-        elif ga_rate <= 0:
-            avg = 0.0
-        else:
-            avg = round((ga_rate * 10) / 6, 1)
+    st.session_state.filas.append({
+        "TEMPORADA": temp,
+        "PJ": pj,
+        "G": goles,
+        "G RATE": g_rate,
+        "A": asist,
+        "A RATE": a_rate,
+        "G/A": ga_total,
+        "G/A RATE": ga_rate,
+        "AVG": avg
+    })
+    st.rerun()
 
-        st.session_state.filas.append({
-            "TEMPORADA": temp,
-            "PJ": pj,
-            "G": goles,
-            "G RATE": g_rate,
-            "A": asist,
-            "A RATE": a_rate,
-            "G/A": ga_total,
-            "G/A RATE": ga_rate,
-            "AVG": avg
-        })
-        st.rerun()
+# Lógica del botón Borrar
+if btn_clear:
+    st.session_state.filas = []
+    st.rerun()
 
-# Resumen y Tabla en una vista compacta
+st.divider()
+
+# --- MOSTRAR RESULTADOS ---
 if st.session_state.filas:
     df = pd.DataFrame(st.session_state.filas)
     
-    # Métricas pequeñas
-    m1, m2, m3, m4 = st.columns(4)
-    m1.metric("TOTAL PJ", df["PJ"].sum())
-    m2.metric("TOTAL G/A", df["G/A"].sum())
-    m3.metric("AVG GLOBAL", f"{round(df['AVG'].mean(), 1)}")
-    if m4.button("LIMPIAR TODO"):
-        st.session_state.filas = []
-        st.rerun()
+    # Métricas de resumen rápidas
+    col_m1, col_m2, col_m3 = st.columns(3)
+    col_m1.metric("TOTAL PARTIDOS", df["PJ"].sum())
+    col_m2.metric("TOTAL GOLES", df["G"].sum())
+    col_m3.metric("PROMEDIO AVG", f"{round(df['AVG'].mean(), 1)}")
 
+    # Tabla de datos
     st.dataframe(
         df,
         use_container_width=True,
-        hide_index=True,
-        height=300 # Altura fija para evitar scroll infinito
+        hide_index=True
     )
 else:
-    st.caption("Esperando datos...")
+    st.write("SISTEMA LISTO: INGRESA DATOS PARA COMENZAR.")
